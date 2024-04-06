@@ -10,9 +10,9 @@
 #include "camera.hpp"
 #include "infworld.hpp"
 
-constexpr float SPEED = 3.0f;
-constexpr float FLY_SPEED = 6.0f;
-Camera cam = Camera(glm::vec3(0.0f, 6.0f, 0.0f));
+constexpr float SPEED = 6.0f;
+constexpr float FLY_SPEED = 8.0f;
+Camera cam = Camera(glm::vec3(0.0f, 8.0f, 0.0f));
 double mousex, mousey;
 
 void die(const char *msg)
@@ -76,17 +76,28 @@ mesh::ChunkVaoTable buildWorld(
 	int ind = 0;
 	for(int x = -int(range); x <= int(range); x++) {
 		for(int z = -int(range); z <= int(range); z++) {
-			mesh::Meshf mesh = 
-				infworld::createChunkMesh(permutations, x, z, 12.0f);
-			chunkvaos.addChunkMesh(ind, mesh);
+			mesh::ElementArrayBuffer mesh = 
+				infworld::createChunkElementArray(permutations, x, z, 32.0f);
+			chunkvaos.addChunk(ind, mesh);
 			ind++;
 		}
 	}
 	return chunkvaos;
 }
 
+void outputErrors()
+{
+	GLenum err = glGetError();
+	while(err != GL_NO_ERROR) {
+		fprintf(stderr, "OpenGL error: %d\n", err);
+		err = glGetError();
+	}
+}
+
 int main()
 {
+	infworld::worldseed permutations = infworld::makePermutations(time(NULL), 6);
+
 	//Initialize glfw and glad, if any of this fails, kill the program
 	if(!glfwInit())
 		die("Failed to init glfw!");
@@ -94,15 +105,15 @@ int main()
 	if(!window)
 		die("Failed to create window!");
 	glfwMakeContextCurrent(window);
+	glfwSwapInterval(1);
 	glfwSetWindowSizeCallback(window, handleWindowResize);
 	glfwSetKeyCallback(window, handleKeyInput);
 	glfwSetCursorPosCallback(window, cursorPosCallback);
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	if(!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-		die("Failed to init glad!");
+		die("Failed to init glad!");	
 
-	infworld::worldseed permutations = infworld::makePermutations(time(NULL), 5);
-	mesh::ChunkVaoTable chunkvaos = buildWorld(7, permutations);
+	mesh::ChunkVaoTable chunkvaos = buildWorld(15, permutations);
 
 	ShaderProgram program("assets/shaders/vert.glsl", "assets/shaders/frag.glsl");
 	program.use();

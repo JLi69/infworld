@@ -7,11 +7,15 @@ namespace mesh {
 	template<typename T>
 	struct Mesh {
 		std::vector<T> vertices;
-		size_t vertexsz;
 	};
 
 	//Mesh of floats
 	typedef Mesh<float> Meshf;
+
+	struct ElementArrayBuffer {
+		Meshf mesh;
+		std::vector<unsigned int> indices;
+	};
 	
 	void addToMesh(Meshf &mesh, const glm::vec3 &v);
 	void addTriangle(
@@ -23,13 +27,12 @@ namespace mesh {
 
 	class ChunkVaoTable {
 		std::vector<unsigned int> vaoids;
-		std::vector<unsigned int> vertexcounts;
 		std::vector<unsigned int> bufferids;
 	public:
 		ChunkVaoTable(unsigned int count);
 		void genBuffers();
 		void clearBuffers();
-		void addChunkMesh(unsigned int index, const mesh::Meshf &chunkmesh);
+		void addChunk(unsigned int index, const mesh::ElementArrayBuffer &chunkmesh);
 		void bindVao(unsigned int index);
 		void drawVao(unsigned int index);
 		unsigned int vaoCount();
@@ -52,6 +55,12 @@ namespace infworld
 		float maxheight
 	);
 	mesh::Meshf createChunkMesh(
+		const worldseed &permutations,
+		int chunkx,
+		int chunkz,
+		float maxheight
+	);
+	mesh::ElementArrayBuffer createChunkElementArray(
 		const worldseed &permutations,
 		int chunkx,
 		int chunkz,

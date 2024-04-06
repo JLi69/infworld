@@ -2,12 +2,17 @@
 #include <random>
 #include <glad/glad.h>
 
-constexpr float STEP = 0.1f;
-constexpr float CHUNK_SZ = 4.0f;
-constexpr float FREQUENCY = 16.0f;
+constexpr unsigned int PREC = 16;
+constexpr float CHUNK_SZ = 8.0f;
+constexpr float FREQUENCY = 64.0f;
 constexpr size_t CHUNK_VERT_SZ = 6;
 constexpr size_t CHUNK_VERT_SZ_BYTES = CHUNK_VERT_SZ * sizeof(float);
-constexpr unsigned int BUFFER_PER_CHUNK = 2;
+constexpr unsigned int CHUNK_VERT_COUNT = PREC * PREC * 6;
+//2 buffers per chunk:
+//0 -> position
+//1 -> normals
+//2 -> indices
+constexpr unsigned int BUFFER_PER_CHUNK = 3;
 
 namespace mesh {
 	void addToMesh(Meshf &mesh, const glm::vec3 &v)
@@ -36,7 +41,6 @@ namespace mesh {
 	{
 		vaoids = std::vector<unsigned int>(count);
 		bufferids = std::vector<unsigned int>(BUFFER_PER_CHUNK * count);
-		vertexcounts = std::vector<unsigned int>(count);
 	}
 
 	void ChunkVaoTable::genBuffers()
@@ -51,18 +55,16 @@ namespace mesh {
 		glGenBuffers(bufferids.size(), &bufferids[0]);
 	}
 
-	void ChunkVaoTable::addChunkMesh(unsigned int index, const mesh::Meshf &chunkmesh)
+	void ChunkVaoTable::addChunk(unsigned int index, const mesh::ElementArrayBuffer &chunkmesh)
 	{
 		glBindVertexArray(vaoids.at(index));
-
-		vertexcounts.at(index) = chunkmesh.vertices.size() / CHUNK_VERT_SZ;
 
 		//Buffer 0 (vertex positions)
 		glBindBuffer(GL_ARRAY_BUFFER, bufferids.at(index * BUFFER_PER_CHUNK));
 		glBufferData(
 			GL_ARRAY_BUFFER, 
-			chunkmesh.vertices.size() * sizeof(float),
-			&chunkmesh.vertices[0],
+			chunkmesh.mesh.vertices.size() * sizeof(float),
+			&chunkmesh.mesh.vertices[0],
 			GL_STATIC_DRAW
 		);
 		glVertexAttribPointer(
@@ -79,8 +81,8 @@ namespace mesh {
 		glBindBuffer(GL_ARRAY_BUFFER, bufferids.at(index * BUFFER_PER_CHUNK + 1));
 		glBufferData(
 			GL_ARRAY_BUFFER,
-			chunkmesh.vertices.size() * sizeof(float),
-			&chunkmesh.vertices[0],
+			chunkmesh.mesh.vertices.size() * sizeof(float),
+			&chunkmesh.mesh.vertices[0],
 			GL_STATIC_DRAW
 		);
 		glVertexAttribPointer(
@@ -92,6 +94,14 @@ namespace mesh {
 			(void*)(sizeof(float) * 3)
 		);
 		glEnableVertexAttribArray(1);
+
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferids.at(index * BUFFER_PER_CHUNK + 2));
+		glBufferData(
+			GL_ELEMENT_ARRAY_BUFFER,
+			chunkmesh.indices.size() * sizeof(unsigned int),
+			&chunkmesh.indices[0],
+			GL_STATIC_DRAW
+		);
 	}
 
 	void ChunkVaoTable::bindVao(unsigned int index)
@@ -101,7 +111,7 @@ namespace mesh {
 
 	void ChunkVaoTable::drawVao(unsigned int index)
 	{	
-		glDrawArrays(GL_TRIANGLES, 0, vertexcounts.at(index));
+		glDrawElements(GL_TRIANGLES, CHUNK_VERT_COUNT, GL_UNSIGNED_INT, 0);
 	}
 
 	unsigned int ChunkVaoTable::vaoCount()
@@ -154,28 +164,71 @@ namespace infworld {
 		float maxheight
 	) {
 		mesh::Meshf worldmesh;
-	
-		float x = -CHUNK_SZ;
-		while(x < CHUNK_SZ) {
-			float z = -CHUNK_SZ;
-			while(z < CHUNK_SZ) {
-				float tx = x + CHUNK_SZ * 2.0f * float(chunkx);
-				float tz = z + CHUNK_SZ * 2.0f * float(chunkz);
 
+		for(unsigned int i = 0; i < PREC; i++) {
+			for(unsigned int j = 0; j < PREC; j++) {
+				float x = -CHUNK_SZ + float(i) / float(PREC) * CHUNK_SZ * 2.0f;
+				float z = -CHUNK_SZ + float(j) / float(PREC) * CHUNK_SZ * 2.0f;
+				float tx = x + float(chunkx) * CHUNK_SZ * 2.0f;
+				float tz = z + float(chunkz) * CHUNK_SZ * 2.0f;
+				float step = 1.0f / float(PREC) * CHUNK_SZ * 2.0f;
+			
 				glm::vec3
 					lowerleft = getTerrainVertex(tx, tz, permutations, maxheight),
-					lowerright = getTerrainVertex(tx + STEP, tz, permutations, maxheight),
-					upperleft = getTerrainVertex(tx, tz + STEP, permutations, maxheight),
-					upperright = getTerrainVertex(tx + STEP, tz + STEP, permutations, maxheight);
+					lowerright = getTerrainVertex(tx + step, tz, permutations, maxheight),
+					upperleft = getTerrainVertex(tx, tz + step, permutations, maxheight),
+					upperright = getTerrainVertex(tx + step, tz + step, permutations, maxheight);
 				//Triangle 1	
 				mesh::addTriangle(worldmesh, upperleft, lowerright, lowerleft);
 				//Triangle 2	
 				mesh::addTriangle(worldmesh, upperright, lowerright, upperleft);	
-				z += STEP;
 			}
-			x += STEP;
-		}
+		}	
 	
 		return worldmesh;
+	}
+
+	mesh::ElementArrayBuffer createChunkElementArray(
+		const worldseed &permutations,
+		int chunkx,
+		int chunkz,
+		float maxheight
+	) {
+		mesh::ElementArrayBuffer worldarraybuffer;
+
+		for(unsigned int i = 0; i <= PREC; i++) {
+			for(unsigned int j = 0; j <= PREC; j++) {
+				float x = -CHUNK_SZ + float(i) / float(PREC) * CHUNK_SZ * 2.0f;
+				float z = -CHUNK_SZ + float(j) / float(PREC) * CHUNK_SZ * 2.0f;
+				float tx = x + float(chunkx) * CHUNK_SZ * 2.0f;
+				float tz = z + float(chunkz) * CHUNK_SZ * 2.0f;
+
+				glm::vec3 vertex = getTerrainVertex(tx, tz, permutations, maxheight);
+
+				glm::vec3
+					v1 = getTerrainVertex(tx + 0.01f, tz, permutations, maxheight),
+					v2 = getTerrainVertex(tx, tz + 0.01f, permutations, maxheight),
+					norm = glm::normalize(glm::cross(v1 - vertex, v2 - vertex));
+
+				mesh::addToMesh(worldarraybuffer.mesh, vertex);
+				mesh::addToMesh(worldarraybuffer.mesh, norm);
+			}
+		}
+
+		//Indices
+		for(unsigned int i = 0; i < PREC; i++) {
+			for(unsigned int j = 0; j < PREC; j++) {
+				unsigned int index = i * (PREC + 1) + j;
+				worldarraybuffer.indices.push_back(index);
+				worldarraybuffer.indices.push_back(index + 1);
+				worldarraybuffer.indices.push_back(index + (PREC + 1));
+
+				worldarraybuffer.indices.push_back(index + (PREC + 1) + 1);
+				worldarraybuffer.indices.push_back(index + (PREC + 1));
+				worldarraybuffer.indices.push_back(index + 1);
+			}
+		}
+
+		return worldarraybuffer;
 	}
 }

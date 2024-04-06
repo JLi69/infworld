@@ -9,8 +9,12 @@ uniform mat4 view;
 uniform vec3 lightdir;
 out float lighting;
 
+out float height;
+
 void main()
 {
-	gl_Position = persp * view * pos;
-	lighting = -dot(lightdir, norm) * 0.4 + 0.6;
+	float y = max(0.0, pos.y);
+	height = pos.y;
+	gl_Position = persp * view * vec4(pos.x, y, pos.z, 1.0);
+	lighting = -dot(lightdir, norm) * 0.3 + 0.7;
 }
