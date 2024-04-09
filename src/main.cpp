@@ -6,12 +6,14 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <random>
 #include "shader.hpp"
 #include "camera.hpp"
 #include "infworld.hpp"
 
 constexpr float SPEED = 6.0f;
 constexpr float FLY_SPEED = 8.0f;
+constexpr float HEIGHT = 24.0f;
 Camera cam = Camera(glm::vec3(0.0f, 8.0f, 0.0f));
 double mousex, mousey;
 
@@ -77,7 +79,7 @@ mesh::ChunkVaoTable buildWorld(
 	for(int x = -int(range); x <= int(range); x++) {
 		for(int z = -int(range); z <= int(range); z++) {
 			mesh::ElementArrayBuffer mesh = 
-				infworld::createChunkElementArray(permutations, x, z, 32.0f);
+				infworld::createChunkElementArray(permutations, x, z, HEIGHT);
 			chunkvaos.addChunk(ind, mesh);
 			ind++;
 		}
@@ -96,7 +98,10 @@ void outputErrors()
 
 int main()
 {
-	infworld::worldseed permutations = infworld::makePermutations(time(NULL), 6);
+	std::random_device rd;
+	int seed = rd();
+	printf("seed: %d\n", seed);
+	infworld::worldseed permutations = infworld::makePermutations(seed, 8);
 
 	//Initialize glfw and glad, if any of this fails, kill the program
 	if(!glfwInit())
@@ -112,19 +117,23 @@ int main()
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	if(!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 		die("Failed to init glad!");	
+	glfwGetCursorPos(window, &mousex, &mousey);
 
 	mesh::ChunkVaoTable chunkvaos = buildWorld(15, permutations);
 
 	ShaderProgram program("assets/shaders/vert.glsl", "assets/shaders/frag.glsl");
 	program.use();
 
-	glfwGetCursorPos(window, &mousex, &mousey);
+	program.uniformFloat("maxheight", HEIGHT); 
+	program.uniformInt("water1", 0);
+	program.uniformInt("water2", 1);
 
 	glClearColor(0.5f, 0.8f, 1.0f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 	glEnable(GL_CULL_FACE);
 	float dt = 0.0f;
+	float time = 0.0f;
 	while(!glfwWindowShouldClose(window)) {
 		float start = glfwGetTime();
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -139,6 +148,8 @@ int main()
 		program.uniformMat4x4("persp", persp);
 		program.uniformMat4x4("view", view);
 		program.uniformVec3("lightdir", glm::normalize(glm::vec3(-1.0f)));
+		program.uniformVec3("camerapos", cam.position);
+		program.uniformFloat("time", time);
 
 		for(int i = 0; i < chunkvaos.vaoCount(); i++) {
 			chunkvaos.bindVao(i);
@@ -150,7 +161,9 @@ int main()
 		cam.fly(dt, FLY_SPEED);
 
 		glfwSwapBuffers(window);
+		outputErrors();
 		glfwPollEvents();
+		time += dt;
 		dt = glfwGetTime() - start;
 	}
 

@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 #include <glm/glm.hpp>
-#include "perlin.hpp"
+#include "noise.hpp"
 
 namespace mesh {
 	template<typename T>
@@ -52,12 +52,6 @@ namespace infworld
 		float x,
 		float z,
 		const worldseed &permutations,
-		float maxheight
-	);
-	mesh::Meshf createChunkMesh(
-		const worldseed &permutations,
-		int chunkx,
-		int chunkz,
 		float maxheight
 	);
 	mesh::ElementArrayBuffer createChunkElementArray(

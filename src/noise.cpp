@@ -1,6 +1,5 @@
-#include "perlin.hpp"
+#include "noise.hpp"
 #include <math.h>
-#include <glm/glm.hpp>
 #include <random>
 
 namespace rng {	
@@ -20,18 +19,34 @@ namespace rng {
 			values[randindex] = values[count - 1];
 			count--;
 		}
-	}
-	
-	float randval(int x, int y, const permutation256 &p)
-	{
-		int index = x * 713 + y * 631;
-		index %= 256;
-		index = labs(index);
-		return (float)p[index] / 255.0f;
-	}
+	}	
 }
 
 namespace perlin {
+	const glm::vec2 gradients[4] = {
+		glm::vec2(1.0f, 0.0f),
+		glm::vec2(-1.0f, 0.0f),	
+		glm::vec2(0.0f, 1.0f),
+		glm::vec2(0.0f, -1.0f),
+	};
+
+	glm::vec2 gradient(int x, int y, const rng::permutation256 &p)
+	{
+		//Taken from wikipedia
+		//do some bit magic to hopefully ensure these values are not too periodic
+		const unsigned w = 8 * sizeof(unsigned);
+		const unsigned s = w / 2;
+		unsigned a = x, b = y;
+		a *= 3284157443; 
+		b ^= a << s | a >> (w-s);
+		b *= 1911520717; 
+		a ^= b << s | b >> (w-s);
+		a *= 2048419325;
+
+		int index = p[unsigned(p[unsigned(p[a % 256] + b) % 256] % 256)];
+		return gradients[index % 4];
+	}
+
 	float dotgradient(
 		int gridx,
 		int gridy,
@@ -39,8 +54,7 @@ namespace perlin {
 		float y,
 		const rng::permutation256 &p
 	) {
-		float angle = rng::randval(gridx, gridy, p) * 2.0f * M_PI;
-		glm::vec2 v(cosf(angle), sinf(angle));
+		glm::vec2 v = gradient(gridx, gridy, p);
 		glm::vec2 d(x - float(gridx), y - float(gridy));
 		return glm::dot(v, d);
 	}

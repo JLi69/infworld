@@ -4,7 +4,7 @@
 
 constexpr unsigned int PREC = 16;
 constexpr float CHUNK_SZ = 8.0f;
-constexpr float FREQUENCY = 64.0f;
+constexpr float FREQUENCY = 128.0f;
 constexpr size_t CHUNK_VERT_SZ = 6;
 constexpr size_t CHUNK_VERT_SZ_BYTES = CHUNK_VERT_SZ * sizeof(float);
 constexpr unsigned int CHUNK_VERT_COUNT = PREC * PREC * 6;
@@ -145,7 +145,7 @@ namespace infworld {
 			freq /= 2.0f;
 		}
 
-		return height / maxheight; //normalized to be between -1.0 and 1.0
+		return height / FREQUENCY; //normalized to be between -1.0 and 1.0
 	}
 
 	glm::vec3 getTerrainVertex(
@@ -155,38 +155,7 @@ namespace infworld {
 		float maxheight
 	) {
 		return glm::vec3(x, getHeight(x, z, permutations) * maxheight, z);
-	}
-
-	mesh::Meshf createChunkMesh(
-		const worldseed &permutations,
-		int chunkx,
-		int chunkz,
-		float maxheight
-	) {
-		mesh::Meshf worldmesh;
-
-		for(unsigned int i = 0; i < PREC; i++) {
-			for(unsigned int j = 0; j < PREC; j++) {
-				float x = -CHUNK_SZ + float(i) / float(PREC) * CHUNK_SZ * 2.0f;
-				float z = -CHUNK_SZ + float(j) / float(PREC) * CHUNK_SZ * 2.0f;
-				float tx = x + float(chunkx) * CHUNK_SZ * 2.0f;
-				float tz = z + float(chunkz) * CHUNK_SZ * 2.0f;
-				float step = 1.0f / float(PREC) * CHUNK_SZ * 2.0f;
-			
-				glm::vec3
-					lowerleft = getTerrainVertex(tx, tz, permutations, maxheight),
-					lowerright = getTerrainVertex(tx + step, tz, permutations, maxheight),
-					upperleft = getTerrainVertex(tx, tz + step, permutations, maxheight),
-					upperright = getTerrainVertex(tx + step, tz + step, permutations, maxheight);
-				//Triangle 1	
-				mesh::addTriangle(worldmesh, upperleft, lowerright, lowerleft);
-				//Triangle 2	
-				mesh::addTriangle(worldmesh, upperright, lowerright, upperleft);	
-			}
-		}	
-	
-		return worldmesh;
-	}
+	}	
 
 	mesh::ElementArrayBuffer createChunkElementArray(
 		const worldseed &permutations,

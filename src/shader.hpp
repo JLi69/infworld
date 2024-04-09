@@ -35,6 +35,8 @@ public:
 
 	void uniformMat4x4(const char *uniformName, const glm::mat4 &mat);
 	void uniformVec3(const char *uniformName, const glm::vec3 &vec);
+	void uniformFloat(const char *uniformName, float value);
+	void uniformInt(const char *uniformName, int value);
 };
 
 #define __SHADER_H__

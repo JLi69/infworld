@@ -140,6 +140,18 @@ void ShaderProgram::uniformVec3(const char *uniformName, const glm::vec3 &vec)
 	glUniform3f(location, vec.x, vec.y, vec.z);
 }
 
+void ShaderProgram::uniformFloat(const char *uniformName, float value)
+{
+	int location = getUniformLocation(uniformName);
+	glUniform1f(location, value);
+}
+
+void ShaderProgram::uniformInt(const char *uniformName, int value)
+{
+	int location = getUniformLocation(uniformName);
+	glUniform1i(location, value);
+}
+
 unsigned int ShaderProgram::getid()
 {
 	return programid;
