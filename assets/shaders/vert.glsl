@@ -5,6 +5,7 @@ layout(location = 1) in vec3 norm;
 
 uniform mat4 persp;
 uniform mat4 view;
+uniform mat4 transform;
 
 uniform vec3 lightdir;
 out float lighting;
@@ -16,8 +17,7 @@ uniform float maxheight;
 void main()
 {
 	height = pos.y / maxheight;
-	float y = max(0.0, pos.y);
-	gl_Position = persp * view * vec4(pos.x, y, pos.z, 1.0);
-	fragpos = vec3(pos.x, y, pos.z);
-	lighting = -dot(lightdir, norm) * 0.3 + 0.7;
+	gl_Position = persp * view * transform * pos;
+	fragpos = (transform * pos).xyz;
+	lighting = max(-dot(lightdir, norm), 0.0) * 0.5 + 0.5;
 }

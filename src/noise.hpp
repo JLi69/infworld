@@ -1,6 +1,4 @@
 #pragma once
-#include <glm/glm.hpp>
-#include <stdint.h>
 
 namespace rng {	
 	//Array that represents a random permutation of 0 -> 255
@@ -9,8 +7,8 @@ namespace rng {
 }
 
 namespace perlin {
-	glm::vec2 gradient(int x, int y, const rng::permutation256 &p);
 	//Assume that 0.0 <= x <= 1.0
 	float interpolate(float a, float b, float x);
 	float noise(float x, float y, const rng::permutation256 &p);
+	float noise(float x, float y, int repeat, const rng::permutation256 &p);	
 }

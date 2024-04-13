@@ -3,6 +3,24 @@
 #include <glm/glm.hpp>
 #include "noise.hpp"
 
+constexpr unsigned int PREC = 64;
+constexpr float CHUNK_SZ = 32.0f;
+constexpr float FREQUENCY = 300.0f;
+constexpr size_t CHUNK_VERT_SZ = 6;
+constexpr size_t CHUNK_VERT_SZ_BYTES = CHUNK_VERT_SZ * sizeof(float);
+constexpr unsigned int CHUNK_VERT_COUNT = PREC * PREC * 6;
+//2 buffers per chunk:
+//0 -> position
+//1 -> normals
+//2 -> indices
+constexpr unsigned int BUFFER_PER_CHUNK = 3;
+
+namespace infworld {
+	struct ChunkPos {
+		int x = 0, z = 0;
+	};
+}
+
 namespace mesh {
 	template<typename T>
 	struct Mesh {
@@ -23,19 +41,27 @@ namespace mesh {
 		const glm::vec3 &v1,
 		const glm::vec3 &v2,
 		const glm::vec3 &v3
-	);
+	);	
 
-	class ChunkVaoTable {
+	class ChunkTable {
+		unsigned int chunkcount;
 		std::vector<unsigned int> vaoids;
 		std::vector<unsigned int> bufferids;
+		std::vector<infworld::ChunkPos> chunkpos;
 	public:
-		ChunkVaoTable(unsigned int count);
+		ChunkTable(unsigned int count);
 		void genBuffers();
 		void clearBuffers();
-		void addChunk(unsigned int index, const mesh::ElementArrayBuffer &chunkmesh);
+		void addChunk(
+			unsigned int index,
+			const mesh::ElementArrayBuffer &chunkmesh,
+			int x,
+			int z
+		);
 		void bindVao(unsigned int index);
 		void drawVao(unsigned int index);
-		unsigned int vaoCount();
+		infworld::ChunkPos getPos(unsigned int index);
+		unsigned int count() const;
 	};
 }
 

@@ -1,4 +1,5 @@
 #include "noise.hpp"
+#include <glm/glm.hpp>
 #include <math.h>
 #include <random>
 
@@ -81,4 +82,22 @@ namespace perlin {
 			lerpedupper = interpolate(upperleft, upperright, x - leftx);
 		return interpolate(lerpedlower, lerpedupper, y - lowery);
 	}
+
+	float noise(float x, float y, int repeat, const rng::permutation256 &p)
+	{
+		int
+			leftx = int(floorf(x)) % repeat,
+			lowery = int(floorf(y)) % repeat,
+			rightx = (leftx + 1) % repeat,
+			uppery = (lowery + 1) % repeat;
+		float 
+			lowerleft = dotgradient(leftx, lowery, x, y, p),
+			lowerright = dotgradient(rightx, lowery, x, y, p),
+			upperleft = dotgradient(leftx, uppery, x, y, p),
+			upperright = dotgradient(rightx, uppery, x, y, p);
+		float 
+			lerpedlower = interpolate(lowerleft, lowerright, x - leftx),
+			lerpedupper = interpolate(upperleft, upperright, x - leftx);
+		return interpolate(lerpedlower, lerpedupper, y - lowery);
+	}	
 }

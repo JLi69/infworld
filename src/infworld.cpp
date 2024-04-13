@@ -2,18 +2,6 @@
 #include <random>
 #include <glad/glad.h>
 
-constexpr unsigned int PREC = 16;
-constexpr float CHUNK_SZ = 8.0f;
-constexpr float FREQUENCY = 128.0f;
-constexpr size_t CHUNK_VERT_SZ = 6;
-constexpr size_t CHUNK_VERT_SZ_BYTES = CHUNK_VERT_SZ * sizeof(float);
-constexpr unsigned int CHUNK_VERT_COUNT = PREC * PREC * 6;
-//2 buffers per chunk:
-//0 -> position
-//1 -> normals
-//2 -> indices
-constexpr unsigned int BUFFER_PER_CHUNK = 3;
-
 namespace mesh {
 	void addToMesh(Meshf &mesh, const glm::vec3 &v)
 	{
@@ -37,26 +25,34 @@ namespace mesh {
 		addToMesh(mesh, normal);
 	}
 
-	ChunkVaoTable::ChunkVaoTable(unsigned int count)
+	ChunkTable::ChunkTable(unsigned int count)
 	{
 		vaoids = std::vector<unsigned int>(count);
+		chunkpos = std::vector<infworld::ChunkPos>(count);
 		bufferids = std::vector<unsigned int>(BUFFER_PER_CHUNK * count);
+		chunkcount = count;
 	}
 
-	void ChunkVaoTable::genBuffers()
+	void ChunkTable::genBuffers()
 	{	
 		glGenVertexArrays(vaoids.size(), &vaoids[0]);	
 		glGenBuffers(bufferids.size(), &bufferids[0]);
 	}
 
-	void ChunkVaoTable::clearBuffers()
+	void ChunkTable::clearBuffers()
 	{
 		glDeleteVertexArrays(vaoids.size(), &vaoids[0]);
 		glGenBuffers(bufferids.size(), &bufferids[0]);
 	}
 
-	void ChunkVaoTable::addChunk(unsigned int index, const mesh::ElementArrayBuffer &chunkmesh)
-	{
+	void ChunkTable::addChunk(
+		unsigned int index,
+		const mesh::ElementArrayBuffer &chunkmesh,
+		int x,
+		int z
+	) {
+		chunkpos.at(index) = { x, z };
+
 		glBindVertexArray(vaoids.at(index));
 
 		//Buffer 0 (vertex positions)
@@ -104,19 +100,24 @@ namespace mesh {
 		);
 	}
 
-	void ChunkVaoTable::bindVao(unsigned int index)
+	void ChunkTable::bindVao(unsigned int index)
 	{
 		glBindVertexArray(vaoids.at(index));
 	}
 
-	void ChunkVaoTable::drawVao(unsigned int index)
+	void ChunkTable::drawVao(unsigned int index)
 	{	
 		glDrawElements(GL_TRIANGLES, CHUNK_VERT_COUNT, GL_UNSIGNED_INT, 0);
 	}
 
-	unsigned int ChunkVaoTable::vaoCount()
+	infworld::ChunkPos ChunkTable::getPos(unsigned int index)
 	{
-		return vaoids.size();
+		return chunkpos.at(index);
+	}
+
+	unsigned int ChunkTable::count() const
+	{
+		return chunkcount;
 	}
 }
 
@@ -136,16 +137,24 @@ namespace infworld {
 	{
 		float height = 0.0f;
 		float freq = FREQUENCY;
-		float maxheight = 0.0f;
+		float amplitude = 1.0f;
 
 		for(int i = 0; i < permutations.size(); i++) {
-			float h = perlin::noise(x / freq, z / freq, permutations[i]) * freq;
-			maxheight += freq;
+			float h = perlin::noise(x / freq, z / freq, permutations[i]) * amplitude;
 			height += h;
 			freq /= 2.0f;
+			amplitude /= 2.0f;
 		}
 
-		return height / FREQUENCY; //normalized to be between -1.0 and 1.0
+		height += 0.1f;
+		if(height < 0.1f && height >= 0.0f)
+			height = 2.0f * height * height + 0.005f;
+		else if(height < 0.3f && height >= 0.1f)
+			height = (height - 0.1f) * 0.09f / 0.2f + 0.025f;
+		else if(height >= 0.3f)
+			height = (height - 0.3f) * 0.88f / 0.7f + 0.115f;
+
+		return height; //normalized to be between -1.0 and 1.0
 	}
 
 	glm::vec3 getTerrainVertex(
@@ -165,6 +174,9 @@ namespace infworld {
 	) {
 		mesh::ElementArrayBuffer worldarraybuffer;
 
+		worldarraybuffer.mesh.vertices.reserve(PREC * PREC * 3 * 2);
+		worldarraybuffer.indices.reserve(CHUNK_VERT_COUNT);
+
 		for(unsigned int i = 0; i <= PREC; i++) {
 			for(unsigned int j = 0; j <= PREC; j++) {
 				float x = -CHUNK_SZ + float(i) / float(PREC) * CHUNK_SZ * 2.0f;
@@ -177,7 +189,7 @@ namespace infworld {
 				glm::vec3
 					v1 = getTerrainVertex(tx + 0.01f, tz, permutations, maxheight),
 					v2 = getTerrainVertex(tx, tz + 0.01f, permutations, maxheight),
-					norm = glm::normalize(glm::cross(v1 - vertex, v2 - vertex));
+					norm = glm::normalize(glm::cross(v2 - vertex, v1 - vertex));
 
 				mesh::addToMesh(worldarraybuffer.mesh, vertex);
 				mesh::addToMesh(worldarraybuffer.mesh, norm);
