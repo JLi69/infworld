@@ -32,7 +32,7 @@ void main()
 
 	color = 
 		vec4(0.1, 0.7, 0.9, 0.0) * diffuse + 
-		vec4(0.3, 0.3, 0.1, 0.0) * specular;
+		vec4(0.5, 0.3, 0.1, 0.0) * specular;
 	color.a = 0.8;
 
 	//fog

@@ -2,6 +2,7 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include "noise.hpp"
+#include "gfx.hpp"
 
 constexpr unsigned int PREC = 64;
 constexpr float CHUNK_SZ = 32.0f;
@@ -19,29 +20,6 @@ namespace infworld {
 	struct ChunkPos {
 		int x = 0, z = 0;
 	};
-}
-
-namespace mesh {
-	template<typename T>
-	struct Mesh {
-		std::vector<T> vertices;
-	};
-
-	//Mesh of floats
-	typedef Mesh<float> Meshf;
-
-	struct ElementArrayBuffer {
-		Meshf mesh;
-		std::vector<unsigned int> indices;
-	};
-	
-	void addToMesh(Meshf &mesh, const glm::vec3 &v);
-	void addTriangle(
-		Meshf &mesh,
-		const glm::vec3 &v1,
-		const glm::vec3 &v2,
-		const glm::vec3 &v3
-	);	
 
 	class ChunkTable {
 		unsigned int chunkcount;
@@ -63,10 +41,7 @@ namespace mesh {
 		infworld::ChunkPos getPos(unsigned int index);
 		unsigned int count() const;
 	};
-}
-
-namespace infworld
-{
+	
 	//We will use a seed value (an integer) to generate multiple
 	//pseudorandom permutations to feed into the perlin noise generator
 	//for world generation
@@ -84,6 +59,11 @@ namespace infworld
 		const worldseed &permutations,
 		int chunkx,
 		int chunkz,
+		float maxheight
+	);
+	ChunkTable buildWorld(
+		unsigned int range,
+		const infworld::worldseed &permutations,
 		float maxheight
 	);
 }
