@@ -12,8 +12,9 @@ namespace mesh {
 	//Mesh of floats
 	typedef Mesh<float> Meshf;
 
+	template<typename T>
 	struct ElementArrayBuffer {
-		Meshf mesh;
+		Mesh<T> mesh;
 		std::vector<unsigned int> indices;
 	};
 	
@@ -45,4 +46,10 @@ namespace gfx {
 	//Loads a texture from 'path' and passes its data to textureid
 	//returns true if texture is successfully read, false otherwise
 	bool loadTexture(const char *path, unsigned int textureid);
+
+	//Converts a normal vector (x, y, z) to a 2d vector consisting of
+	//angles that represent the vector (we assume the original 3d vector
+	//has magnitude of 1). This can allow for a smaller amount of data to
+	//be used in the mesh and improve performance
+	glm::vec2 compressNormal(glm::vec3 n);
 }

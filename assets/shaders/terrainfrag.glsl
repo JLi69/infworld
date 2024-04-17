@@ -10,34 +10,56 @@ uniform float time;
 uniform vec3 lightdir;
 uniform vec3 camerapos;
 
-uniform sampler2D sandtexture;
-uniform sampler2D grasstexture;
-uniform sampler2D stonetexture;
-uniform sampler2D snowtexture;
+uniform sampler2D terraintexture;
 
-vec4 land()
+vec2 getuv1()
 {
-	vec4 sandcolor = texture(sandtexture, fract(fragpos.xz / 16.0));
-	vec4 grasscolor = texture(grasstexture, fract(fragpos.xz / 16.0));
-	vec4 stonecolor = texture(stonetexture, fract(fragpos.xz / 16.0));
-	vec4 snowcolor = texture(snowtexture, fract(fragpos.xz / 16.0));
-	sandcolor.a = 0.0;
-	grasscolor.a = 0.0;
-	stonecolor.a = 0.0;
-	snowcolor.a = 0.0;
+	return
+		vec2(0.0, 0.0) * float(height < 0.02) +
+		vec2(0.25, 0.0) * float(height >= 0.02 && height < 0.1) +
+		vec2(0.50, 0.0) * float(height >= 0.1 && height < 0.6) +
+		vec2(0.75, 0.0) * float(height >= 0.6);
+}
 
-	return snowcolor * float(height > 0.6) +
-		   mix(stonecolor, snowcolor, clamp((height - 0.55) / 0.05, 0.0, 1.0)) * float(height > 0.55 && height <= 0.6) +
-		   stonecolor * float(height <= 0.55 && height > 0.3) + 
-		   mix(grasscolor, stonecolor, clamp((height - 0.1) / 0.1, 0.0, 1.0)) * float(height > 0.1 && height <= 0.3) +
-		   grasscolor * float(height < 0.1 && height > 0.04) +
-		   mix(sandcolor, grasscolor, clamp((height - 0.02) / 0.02, 0.0, 1.0)) * float(height > 0.02 && height <= 0.04) +
-		   sandcolor * float(height < 0.02);
+vec2 getuv2()
+{
+	return
+		vec2(0.0, 0.0) * float(height < 0.04) +
+		vec2(0.25, 0.0) * float(height >= 0.04 && height < 0.3) +
+		vec2(0.50, 0.0) * float(height >= 0.3 && height < 0.7) +
+		vec2(0.75, 0.0) * float(height >= 0.7);
+}
+
+float mixval(float lower, float upper, float y)
+{
+	return (1.0 - (y - lower) / (upper - lower)) * float(y >= lower && y < upper);
+}
+
+float heightToMix()
+{
+	return
+		mixval(0.02, 0.04, height) +
+		mixval(0.1, 0.3, height) +
+		mixval(0.6, 0.7, height);
+}
+
+vec4 landcolor()
+{
+	vec2 tc = fract(fragpos.xz / 16.0) * vec2(0.248, 1.0) + vec2(0.001, 0.0);
+	vec2 uv1 = getuv1();
+	vec2 uv2 = getuv2();
+
+	vec4 color1 = texture(terraintexture, tc + uv1);
+	vec4 color2 = texture(terraintexture, tc + uv2);
+	color1.a = 0.0;
+	color2.a = 0.0;
+
+	return mix(color1, color2, heightToMix());
 }
 
 void main()
 {
-	color = land() * lighting;
+	color = landcolor() * lighting;
 	color.a = 1.0;
 	//fog
 	float d = length(fragpos - camerapos);

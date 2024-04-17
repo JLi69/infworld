@@ -94,3 +94,18 @@ void initMousePos(GLFWwindow *window)
 	glfwGetCursorPos(window, &mousex, &mousey);
 	State::get()->setMousePos(mousex, mousey);
 }
+
+void outputFps(float dt)
+{
+	static float fpstimer = 0.0f;
+	static int frames = 0;
+	fpstimer += dt;
+
+	if(fpstimer > 1.0f) {
+		fprintf(stderr, "FPS: %d\n", frames);
+		fpstimer = 0;
+		frames = 0;
+	}
+	else
+		frames++;
+}

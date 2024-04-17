@@ -1,4 +1,5 @@
 #pragma once
+#include <stdint.h>
 #include <vector>
 #include <glm/glm.hpp>
 #include "noise.hpp"
@@ -7,7 +8,7 @@
 constexpr unsigned int PREC = 64;
 constexpr float CHUNK_SZ = 32.0f;
 constexpr float FREQUENCY = 300.0f;
-constexpr size_t CHUNK_VERT_SZ = 6;
+constexpr size_t CHUNK_VERT_SZ = 3;
 constexpr size_t CHUNK_VERT_SZ_BYTES = CHUNK_VERT_SZ * sizeof(float);
 constexpr unsigned int CHUNK_VERT_COUNT = PREC * PREC * 6;
 //2 buffers per chunk:
@@ -32,7 +33,7 @@ namespace infworld {
 		void clearBuffers();
 		void addChunk(
 			unsigned int index,
-			const mesh::ElementArrayBuffer &chunkmesh,
+			const mesh::ElementArrayBuffer<float> &chunkmesh,
 			int x,
 			int z
 		);
@@ -55,7 +56,7 @@ namespace infworld {
 		const worldseed &permutations,
 		float maxheight
 	);
-	mesh::ElementArrayBuffer createChunkElementArray(
+	mesh::ElementArrayBuffer<float> createChunkElementArray(
 		const worldseed &permutations,
 		int chunkx,
 		int chunkz,

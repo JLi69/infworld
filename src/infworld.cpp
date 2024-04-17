@@ -29,12 +29,14 @@ namespace infworld {
 		}
 
 		height += 0.1f;
-		if(height < 0.1f && height >= 0.0f)
+		if(height < 0.0f)
+			height = height * 1.0f / 0.9f;	
+		else if(height < 0.1f && height >= 0.0f)
 			height = 2.0f * height * height + 0.005f;
 		else if(height < 0.3f && height >= 0.1f)
 			height = (height - 0.1f) * 0.09f / 0.2f + 0.025f;
 		else if(height >= 0.3f)
-			height = (height - 0.3f) * 0.88f / 0.7f + 0.115f;
+			height = (height - 0.3f) * 0.885f / 0.8f + 0.115f;
 
 		return height; //normalized to be between -1.0 and 1.0
 	}
@@ -46,15 +48,15 @@ namespace infworld {
 		float maxheight
 	) {
 		return glm::vec3(x, getHeight(x, z, permutations) * maxheight, z);
-	}	
+	}
 
-	mesh::ElementArrayBuffer createChunkElementArray(
+	mesh::ElementArrayBuffer<float> createChunkElementArray(
 		const worldseed &permutations,
 		int chunkx,
 		int chunkz,
 		float maxheight
 	) {
-		mesh::ElementArrayBuffer worldarraybuffer;
+		mesh::ElementArrayBuffer<float> worldarraybuffer;
 
 		worldarraybuffer.mesh.vertices.reserve(PREC * PREC * 3 * 2);
 		worldarraybuffer.indices.reserve(CHUNK_VERT_COUNT);
@@ -72,9 +74,11 @@ namespace infworld {
 					v1 = getTerrainVertex(tx + 0.01f, tz, permutations, maxheight),
 					v2 = getTerrainVertex(tx, tz + 0.01f, permutations, maxheight),
 					norm = glm::normalize(glm::cross(v2 - vertex, v1 - vertex));
+				glm::vec2 n = gfx::compressNormal(norm);
 
-				mesh::addToMesh(worldarraybuffer.mesh, vertex);
-				mesh::addToMesh(worldarraybuffer.mesh, norm);
+				worldarraybuffer.mesh.vertices.push_back(vertex.y / maxheight);	
+				worldarraybuffer.mesh.vertices.push_back(n.x);
+				worldarraybuffer.mesh.vertices.push_back(n.y);
 			}
 		}
 
@@ -82,13 +86,13 @@ namespace infworld {
 		for(unsigned int i = 0; i < PREC; i++) {
 			for(unsigned int j = 0; j < PREC; j++) {
 				unsigned int index = i * (PREC + 1) + j;
+				worldarraybuffer.indices.push_back(index + (PREC + 1));
+				worldarraybuffer.indices.push_back(index + 1);
 				worldarraybuffer.indices.push_back(index);
-				worldarraybuffer.indices.push_back(index + 1);
-				worldarraybuffer.indices.push_back(index + (PREC + 1));
 
-				worldarraybuffer.indices.push_back(index + (PREC + 1) + 1);
-				worldarraybuffer.indices.push_back(index + (PREC + 1));
 				worldarraybuffer.indices.push_back(index + 1);
+				worldarraybuffer.indices.push_back(index + (PREC + 1));
+				worldarraybuffer.indices.push_back(index + (PREC + 1) + 1);
 			}
 		}
 
@@ -107,7 +111,7 @@ namespace infworld {
 		int ind = 0;
 		for(int x = -int(range); x <= int(range); x++) {
 			for(int z = -int(range); z <= int(range); z++) {
-				mesh::ElementArrayBuffer mesh = 
+				mesh::ElementArrayBuffer<float> mesh = 
 					infworld::createChunkElementArray(permutations, x, z, maxheight);
 				chunks.addChunk(ind, mesh, x, z);
 				ind++;
@@ -144,7 +148,7 @@ namespace infworld {
 
 	void ChunkTable::addChunk(
 		unsigned int index,
-		const mesh::ElementArrayBuffer &chunkmesh,
+		const mesh::ElementArrayBuffer<float> &chunkmesh,
 		int x,
 		int z
 	) {
@@ -162,7 +166,7 @@ namespace infworld {
 		);
 		glVertexAttribPointer(
 			0,
-			3,
+			1,
 			GL_FLOAT,
 			false,
 			CHUNK_VERT_SZ_BYTES,
@@ -180,11 +184,11 @@ namespace infworld {
 		);
 		glVertexAttribPointer(
 			1,
-			3,
+			2,
 			GL_FLOAT, 
 			false,
 			CHUNK_VERT_SZ_BYTES,
-			(void*)(sizeof(float) * 3)
+			(void*)(sizeof(float))
 		);
 		glEnableVertexAttribArray(1);
 

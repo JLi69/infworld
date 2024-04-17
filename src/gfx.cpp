@@ -84,9 +84,9 @@ namespace gfx {
 	
 		if(errorcount > 0) {
 			fprintf(stderr, "%d error(s)\n", errorcount);
-	#ifdef DISALLOW_ERRORS 
+#ifdef DISALLOW_ERRORS 
 			die("OpenGL Error, killing program.");
-	#endif
+#endif
 		}
 	}
 
@@ -133,5 +133,29 @@ namespace gfx {
 
 		stbi_image_free(data);
 		return success;
+	}
+
+	float getAngle(float x, float y)
+	{
+		if(x == 0.0f && y > 0.0f)
+			return M_PI / 2.0f;
+		if(x == 0.0f && y < 0.0f)
+			return M_PI / 2.0f * 3.0f;
+
+		float angle = atanf(y / x);
+
+		if(x > 0.0f && y < 0.0f)
+			angle += M_PI * 2.0f;
+		else if(x < 0.0f && y > 0.0f)
+			angle += M_PI;
+		else if(x < 0.0f && y < 0.0f)
+			angle += M_PI;
+
+		return angle;
+	}
+
+	glm::vec2 compressNormal(glm::vec3 n)
+	{
+		return glm::vec2(getAngle(n.x, n.z), asinf(n.y));
 	}
 }

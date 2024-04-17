@@ -49,22 +49,21 @@ int main()
 	//Quad
 	gfx::Vao quad = gfx::createQuadVao();
 	//Textures
-	unsigned int textures[4];
-	glGenTextures(4, textures);
-	gfx::loadTexture("assets/textures/sand.png", textures[0]);
-	gfx::loadTexture("assets/textures/grass.png", textures[1]);
-	gfx::loadTexture("assets/textures/stone.png", textures[2]);	
-	gfx::loadTexture("assets/textures/snow.png", textures[3]);	
+	unsigned int terraintextures;
+	glGenTextures(1, &terraintextures);
+	gfx::loadTexture("assets/textures/terraintextures.png", terraintextures);
 	unsigned int watermaps[3];
 	glGenTextures(3, watermaps);
 	gfx::loadTexture("assets/textures/waternormal1.png", watermaps[0]);
 	gfx::loadTexture("assets/textures/waternormal2.png", watermaps[1]);
 	gfx::loadTexture("assets/textures/waterdudv.png", watermaps[2]);
 
-	ShaderProgram terrainShader("assets/shaders/vert.glsl", "assets/shaders/terrainfrag.glsl");
+	ShaderProgram terrainShader("assets/shaders/terrainvert.glsl", "assets/shaders/terrainfrag.glsl");
 	ShaderProgram waterShader("assets/shaders/vert.glsl", "assets/shaders/waterfrag.glsl");
 	terrainShader.use();
 	terrainShader.uniformFloat("maxheight", HEIGHT); 
+	terrainShader.uniformFloat("chunksz", CHUNK_SZ);
+	terrainShader.uniformInt("prec", PREC);
 
 	glClearColor(0.5f, 0.8f, 1.0f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
@@ -82,7 +81,7 @@ int main()
 		int w, h;
 		glfwGetWindowSize(window, &w, &h);
 		float aspect = float(w) / float(h);
-		glm::mat4 persp = glm::perspective(glm::radians(75.0f), aspect, 0.1f, 1000.0f);
+		glm::mat4 persp = glm::perspective(glm::radians(75.0f), aspect, 0.1f, 10000.0f);
 		//View matrix
 		glm::mat4 view = cam.viewMatrix();
 		
@@ -90,25 +89,21 @@ int main()
 		terrainShader.use();
 		//Textures
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, textures[0]);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, textures[1]);
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, textures[2]);
-		glActiveTexture(GL_TEXTURE3);
-		glBindTexture(GL_TEXTURE_2D, textures[3]);
-		terrainShader.uniformInt("sandtexture", 0);
-		terrainShader.uniformInt("grasstexture", 1);
-		terrainShader.uniformInt("stonetexture", 2);
-		terrainShader.uniformInt("snowtexture", 3);
+		glBindTexture(GL_TEXTURE_2D, terraintextures);
+		terrainShader.uniformInt("terraintexture", 0);
 		//uniforms
 		terrainShader.uniformMat4x4("persp", persp);
 		terrainShader.uniformMat4x4("view", view);
 		terrainShader.uniformVec3("lightdir", glm::normalize(glm::vec3(-1.0f)));
 		terrainShader.uniformVec3("camerapos", cam.position);
 		terrainShader.uniformFloat("time", time);
-		terrainShader.uniformMat4x4("transform", glm::mat4(1.0f));
 		for(int i = 0; i < chunks.count(); i++) {
+			infworld::ChunkPos p = chunks.getPos(i);
+			float x = float(p.z) * CHUNK_SZ * 2.0f * float(PREC) / float(PREC + 1);
+			float z = float(p.x) * CHUNK_SZ * 2.0f * float(PREC) / float(PREC + 1);
+			glm::mat4 transform = glm::mat4(1.0f);
+			transform = glm::translate(transform, glm::vec3(x, 0.0f, z));
+			terrainShader.uniformMat4x4("transform", transform);
 			chunks.bindVao(i);
 			chunks.drawVao(i);
 		}
@@ -146,6 +141,7 @@ int main()
 		gfx::outputErrors();
 		glfwPollEvents();
 		time += dt;
+		outputFps(dt);
 		dt = glfwGetTime() - start;
 	}
 
