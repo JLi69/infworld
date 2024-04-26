@@ -14,9 +14,11 @@
 #include "gfx.hpp"
 #include "app.hpp"
 
-constexpr float SPEED = 8.0f;
+constexpr float SPEED = 16.0f;
 constexpr float FLY_SPEED = 10.0f;
 constexpr float HEIGHT = 120.0f;
+constexpr float SCALE = 2.5f;
+constexpr unsigned int RANGE = 7;
 
 int main()
 {
@@ -45,7 +47,7 @@ int main()
 		die("Failed to init glad!");
 	initMousePos(window);
 
-	infworld::ChunkTable chunks = infworld::buildWorld(7, permutations, HEIGHT);
+	infworld::ChunkTable chunks = infworld::buildWorld(RANGE, permutations, HEIGHT);
 	//Quad
 	gfx::Vao quad = gfx::createQuadVao();
 	//Textures
@@ -102,6 +104,7 @@ int main()
 			float x = float(p.z) * CHUNK_SZ * 2.0f * float(PREC) / float(PREC + 1);
 			float z = float(p.x) * CHUNK_SZ * 2.0f * float(PREC) / float(PREC + 1);
 			glm::mat4 transform = glm::mat4(1.0f);
+			transform = glm::scale(transform, glm::vec3(SCALE));
 			transform = glm::translate(transform, glm::vec3(x, 0.0f, z));
 			terrainShader.uniformMat4x4("transform", transform);
 			chunks.bindVao(i);
@@ -125,12 +128,16 @@ int main()
 		waterShader.uniformVec3("lightdir", glm::normalize(glm::vec3(-1.0f)));
 		waterShader.uniformVec3("camerapos", cam.position);
 		waterShader.uniformFloat("time", time);
-		glm::mat4 transform = glm::mat4(1.0f);
-		transform = glm::translate(transform, glm::vec3(cam.position.x, 0.0f, cam.position.z));
-		transform = glm::scale(transform, glm::vec3(CHUNK_SZ * 32.0f));
-		waterShader.uniformMat4x4("transform", transform);
-		quad.bind();
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		for(int i = 0; i < 9; i++) {
+			int ix = i % 3 - 1, iz = i / 3 - 1;
+			float x = float(ix) * CHUNK_SZ * 32.0f * 2.0f, z = float(iz) * CHUNK_SZ * 32.0f * 2.0f;
+			glm::mat4 transform = glm::mat4(1.0f);
+			transform = glm::translate(transform, glm::vec3(cam.position.x + x, 0.0f, cam.position.z + z));
+			transform = glm::scale(transform, glm::vec3(CHUNK_SZ * 32.0f));
+			waterShader.uniformMat4x4("transform", transform);
+			quad.bind();
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		}
 		glEnable(GL_CULL_FACE);
 
 		//Update camera

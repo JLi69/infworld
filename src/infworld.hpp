@@ -25,8 +25,7 @@ namespace infworld {
 	class ChunkTable {
 		unsigned int chunkcount;
 		std::vector<unsigned int> vaoids;
-		std::vector<unsigned int> bufferids;
-		std::vector<infworld::ChunkPos> chunkpos;
+		std::vector<unsigned int> bufferids; std::vector<infworld::ChunkPos> chunkpos;
 	public:
 		ChunkTable(unsigned int count);
 		void genBuffers();
@@ -50,6 +49,7 @@ namespace infworld {
 
 	worldseed makePermutations(int seed, unsigned int count);
 	float getHeight(float x, float z, const worldseed &permutations);
+	float interpolate(float x, float lowerx, float upperx, float a, float b);
 	glm::vec3 getTerrainVertex(
 		float x,
 		float z,

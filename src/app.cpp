@@ -5,7 +5,7 @@
 
 State::State() 
 {
-	cam = Camera(glm::vec3(0.0f, 64.0f, 0.0f));
+	cam = Camera(glm::vec3(0.0f, 160.0f, 0.0f));
 	mousex = 0.0;
 	mousey = 0.0;
 }

@@ -15,6 +15,16 @@ namespace infworld {
 		return permutations;
 	}
 
+	float smoothstep(float x)
+	{
+		return x * x * (3.0f - 2.0f * x);
+	}
+
+	float interpolate(float x, float lowerx, float upperx, float a, float b)
+	{
+		return (x - lowerx) / (upperx - lowerx) * (b - a) + a;
+	}
+
 	float getHeight(float x, float z, const worldseed &permutations) 
 	{
 		float height = 0.0f;
@@ -28,15 +38,14 @@ namespace infworld {
 			amplitude /= 2.0f;
 		}
 
-		height += 0.1f;
-		if(height < 0.0f)
-			height = height * 1.0f / 0.9f;	
-		else if(height < 0.1f && height >= 0.0f)
-			height = 2.0f * height * height + 0.005f;
-		else if(height < 0.3f && height >= 0.1f)
-			height = (height - 0.1f) * 0.09f / 0.2f + 0.025f;
-		else if(height >= 0.3f)
-			height = (height - 0.3f) * 0.885f / 0.8f + 0.115f;
+		if(height < -0.1f)
+			height = interpolate(height, -1.0f, -0.1f, -1.0f, 0.003f);
+		else if(height >= -0.1f && height < 0.0f)
+			height = interpolate(height, -0.1f, 0.0f, 0.003f, 0.03f);
+		else if(height >= 0.0f && height < 0.15f)
+			height = interpolate(height, 0.0f, 0.15f, 0.03f, 0.12f);
+		else if(height >= 0.1f)
+			height = interpolate(height, 0.15f, 1.0f, 0.12f, 1.0f);
 
 		return height; //normalized to be between -1.0 and 1.0
 	}
@@ -47,7 +56,12 @@ namespace infworld {
 		const worldseed &permutations,
 		float maxheight
 	) {
-		return glm::vec3(x, getHeight(x, z, permutations) * maxheight, z);
+		float h = getHeight(x, z, permutations) * maxheight;
+		if(h > -0.003f && h <= 0.0f)
+			h -= 0.003f;
+		else if(h < 0.003f && h >= 0.0f)
+			h += 0.003f;
+		return glm::vec3(x, h, z);
 	}
 
 	mesh::ElementArrayBuffer<float> createChunkElementArray(
