@@ -2,6 +2,7 @@
 #include <random>
 #include <glad/glad.h>
 #include <chrono>
+#include <thread>
 
 namespace infworld {
 	worldseed makePermutations(int seed, unsigned int count)
@@ -113,24 +114,66 @@ namespace infworld {
 		return worldarraybuffer;
 	}
 
+	ChunkData buildChunk(
+		const infworld::worldseed &permutations,
+		int x,
+		int z,
+		float maxheight
+	) {
+		return {
+			infworld::createChunkElementArray(permutations, x, z, maxheight),
+			{ x, z }
+		};
+	}
+
+	inline unsigned int joinBuilderThreads(
+		std::vector<std::thread> &builders,
+		const std::vector<ChunkData> &builtchunks,
+		ChunkTable &chunks,
+		unsigned int ind,
+		unsigned int maxsz
+	) {
+		if(builders.size() < maxsz)
+			return 0;
+		for(auto &th : builders)
+			th.join();
+		for(int i = 0; i < builders.size(); i++)
+			chunks.addChunk(ind + i, builtchunks.at(i));
+		unsigned int sz = builders.size();
+		builders.clear();
+		return sz;
+	}
+
 	ChunkTable buildWorld(
 		unsigned int range,
 		const infworld::worldseed &permutations,
 		float maxheight
 	) {
 		auto starttime = std::chrono::steady_clock::now();
+		unsigned int threadcount = 
+			std::max<unsigned int>(std::thread::hardware_concurrency(), 4);
 	
+		std::vector<ChunkData> builtchunks(threadcount);
 		ChunkTable chunks((2 * range + 1) * (2 * range + 1));
 		chunks.genBuffers();
+		auto build = 
+			[&builtchunks, &permutations, &maxheight](int x, int z, int i) {
+				builtchunks[i] = buildChunk(permutations, x, z, maxheight);
+			};
+		
+		//Multithreading to speed up terrain generation/building
+		std::vector<std::thread> builders; 
 		int ind = 0;
 		for(int x = -int(range); x <= int(range); x++) {
 			for(int z = -int(range); z <= int(range); z++) {
-				mesh::ElementArrayBuffer<float> mesh = 
-					infworld::createChunkElementArray(permutations, x, z, maxheight);
-				chunks.addChunk(ind, mesh, x, z);
-				ind++;
+				builders.push_back(std::thread(build, x, z, builders.size()));
+				unsigned int sz = 	
+					joinBuilderThreads(builders, builtchunks, chunks, ind, threadcount);
+				ind += sz;
 			}
 		}
+
+		joinBuilderThreads(builders, builtchunks, chunks, ind, 0);
 
 		auto endtime = std::chrono::steady_clock::now();
 		std::chrono::duration<double> duration = endtime - starttime;
@@ -213,6 +256,11 @@ namespace infworld {
 			&chunkmesh.indices[0],
 			GL_STATIC_DRAW
 		);
+	}
+
+	void ChunkTable::addChunk(unsigned int index, const ChunkData &chunk)
+	{
+		addChunk(index, chunk.chunkmesh, chunk.position.x, chunk.position.z);
 	}
 
 	void ChunkTable::bindVao(unsigned int index)

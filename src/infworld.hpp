@@ -22,10 +22,16 @@ namespace infworld {
 		int x = 0, z = 0;
 	};
 
+	struct ChunkData {
+		mesh::ElementArrayBuffer<float> chunkmesh;
+		ChunkPos position;
+	};
+
 	class ChunkTable {
 		unsigned int chunkcount;
 		std::vector<unsigned int> vaoids;
-		std::vector<unsigned int> bufferids; std::vector<infworld::ChunkPos> chunkpos;
+		std::vector<unsigned int> bufferids; 
+		std::vector<infworld::ChunkPos> chunkpos;
 	public:
 		ChunkTable(unsigned int count);
 		void genBuffers();
@@ -36,6 +42,7 @@ namespace infworld {
 			int x,
 			int z
 		);
+		void addChunk(unsigned int index, const ChunkData &chunk);
 		void bindVao(unsigned int index);
 		void drawVao(unsigned int index);
 		infworld::ChunkPos getPos(unsigned int index);
@@ -60,6 +67,12 @@ namespace infworld {
 		const worldseed &permutations,
 		int chunkx,
 		int chunkz,
+		float maxheight
+	);
+	ChunkData buildChunk(
+		const infworld::worldseed &permutations,
+		int x,
+		int z,
 		float maxheight
 	);
 	ChunkTable buildWorld(
