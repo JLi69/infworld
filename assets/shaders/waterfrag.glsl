@@ -12,6 +12,11 @@ uniform float time;
 uniform vec3 lightdir;
 uniform vec3 camerapos;
 
+const float VIEW_DIST = 1024.0;
+const float FOG_DIST = 512.0;
+const float MAX_DIST = VIEW_DIST + FOG_DIST;
+const float WATER_FOG_DIST = 24.0;
+
 vec2 direction(float angle)
 {
 	return vec2(cos(angle), sin(angle));
@@ -19,6 +24,10 @@ vec2 direction(float angle)
 
 void main()
 {
+	float d = length(fragpos - camerapos);
+	if(d > MAX_DIST)
+		discard;
+
 	vec2 dudv = (texture(waterdudv, fragpos.xz / 16.0).xy - vec2(0.5, 0.5)) * 2.0;
 	vec3 n1 = (texture(waternormal1, fract((fragpos.xz + dudv) / 32.0 + direction(-0.5) * 0.08 * time)).xzy - 0.5) * 2.0,
 		 n2 = (texture(waternormal2, fract((fragpos.xz + dudv) / 32.0 + direction(3.14 + 0.5) * 0.05 * time)).xzy - 0.5) * 2.0;
@@ -36,8 +45,7 @@ void main()
 	color.a = 0.8;
 
 	//fog
-	float d = length(fragpos - camerapos);
-	vec4 fogeffect = mix(color, vec4(0.5, 0.8, 1.0, 1.0), min(max(0.0, d - 1024.0) / 128.0, 1.0));
-	vec4 watereffect = mix(color, vec4(0.1, 0.7, 0.9, 1.0), min(max(0.0, d) / 24.0, 1.0));
+	vec4 fogeffect = mix(color, vec4(0.5, 0.8, 1.0, 1.0), min(max(0.0, d - VIEW_DIST) / FOG_DIST, 1.0));
+	vec4 watereffect = mix(color, vec4(0.1, 0.7, 0.9, 1.0), min(max(0.0, d) / WATER_FOG_DIST, 1.0));
 	color = fogeffect * float(camerapos.y >= 0.0) + watereffect * float(camerapos.y < 0.0);
 }

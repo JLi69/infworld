@@ -12,6 +12,11 @@ uniform vec3 camerapos;
 
 uniform sampler2D terraintexture;
 
+const float VIEW_DIST = 1024.0;
+const float FOG_DIST = 512.0;
+const float MAX_DIST = VIEW_DIST + FOG_DIST;
+const float WATER_FOG_DIST = 24.0;
+
 vec2 getuv1()
 {
 	return
@@ -59,11 +64,14 @@ vec4 landcolor()
 
 void main()
 {
-	color = landcolor() * lighting;
-	color.a = 1.0;
-	//fog
 	float d = length(fragpos - camerapos);
-	vec4 fogeffect = mix(color, vec4(0.5, 0.8, 1.0, 1.0), min(max(0.0, d - 1024.0) / 128.0, 1.0));
-	vec4 watereffect = mix(color, vec4(0.1, 0.7, 0.9, 1.0), min(max(0.0, d) / 24.0, 1.0));
+	if(d > MAX_DIST)
+		discard;
+
+	color = landcolor() * lighting;
+	color.a = 1.0;	
+	//fog
+	vec4 fogeffect = mix(color, vec4(0.5, 0.8, 1.0, 1.0), min(max(0.0, d - VIEW_DIST) / FOG_DIST, 1.0));
+	vec4 watereffect = mix(color, vec4(0.1, 0.7, 0.9, 1.0), min(max(0.0, d) / WATER_FOG_DIST, 1.0));
 	color = fogeffect * float(camerapos.y >= 0.0) + watereffect * float(camerapos.y < 0.0);
 }

@@ -1,6 +1,7 @@
 #include "gfx.hpp"
 #include <stdio.h>
 #include <stb_image/stb_image.h>
+#include <assert.h>
 #include "app.hpp"
 
 namespace mesh {
@@ -62,6 +63,55 @@ namespace gfx {
 
 		quadvao.vertcount = 6;
 		return quadvao;
+	}
+
+	Vao createCubeVao()
+	{
+		const float CUBE[] = {
+			1.0f, 1.0f, 1.0f, //0
+			-1.0f, 1.0f, 1.0f, //1
+			-1.0f, -1.0f, 1.0f, //2
+			1.0f, -1.0f, 1.0f, //3
+			1.0f, 1.0f, -1.0f, //4
+			-1.0f, 1.0f, -1.0f, //5
+			-1.0f, -1.0f, -1.0f, //6
+			1.0f, -1.0f, -1.0f, //7
+		};
+
+		const unsigned int CUBE_INDICES[] = {
+			7, 6, 5,
+    		5, 4, 7,
+
+    		5, 6, 2,
+    		2, 1, 5,
+
+    		0, 3, 7,
+    		7, 4, 0,
+
+    		0, 1, 2,
+    		2, 3, 0,
+
+    		0, 4, 5,
+			5, 1, 0,
+
+    		7, 2, 6,
+    		3, 2, 7,
+		};
+
+		Vao cubevao;
+		cubevao.buffers = std::vector<unsigned int>(2);
+		glGenVertexArrays(1, &cubevao.vaoid);
+		glBindVertexArray(cubevao.vaoid);
+		glGenBuffers(2, &cubevao.buffers[0]);
+		glBindBuffer(GL_ARRAY_BUFFER, cubevao.buffers[0]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(CUBE), CUBE, GL_STATIC_DRAW);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubevao.buffers[1]);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(CUBE_INDICES), CUBE_INDICES, GL_STATIC_DRAW);
+		glVertexAttribPointer(0, 3, GL_FLOAT, false, 3 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(0);
+
+		cubevao.vertcount = 36;
+		return cubevao;
 	}
 
 	void destroyVao(Vao &vao) 
@@ -127,11 +177,52 @@ namespace gfx {
 			);	
 			glGenerateMipmap(GL_TEXTURE_2D);
 		}
-		else {
+		else
 			fprintf(stderr, "Failed to open: %s\n", path);
-		}
 
 		stbi_image_free(data);
+		return success;
+	}
+
+	bool loadCubemap(const std::vector<std::string> &faces, unsigned int textureid)
+	{
+		bool success = true;
+		int width, height, channels;
+		assert(faces.size() == 6); //faces must have 6 elements in it
+		glBindTexture(GL_TEXTURE_CUBE_MAP, textureid);
+
+		for(int i = 0; i < 6; i++) {
+			unsigned char* data = 
+				stbi_load(faces.at(i).c_str(), &width, &height, &channels, 0);
+
+			if(data) {	
+				GLenum format = getFormat(channels);
+				glTexImage2D(
+					GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+					0,
+					format,
+					width,
+					height,
+					0,
+					format,
+					GL_UNSIGNED_BYTE, 
+					data
+				);
+			}
+			else {
+				fprintf(stderr, "Failed to open cubemap file: %s\n", faces.at(i).c_str()); 
+				success = false;
+			}
+
+			stbi_image_free(data);
+		}
+
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
 		return success;
 	}
 

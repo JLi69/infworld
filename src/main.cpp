@@ -50,6 +50,8 @@ int main()
 	infworld::ChunkTable chunks = infworld::buildWorld(RANGE, permutations, HEIGHT);
 	//Quad
 	gfx::Vao quad = gfx::createQuadVao();
+	gfx::Vao cube = gfx::createCubeVao();
+	//Cube
 	//Textures
 	unsigned int terraintextures;
 	glGenTextures(1, &terraintextures);
@@ -59,9 +61,21 @@ int main()
 	gfx::loadTexture("assets/textures/waternormal1.png", watermaps[0]);
 	gfx::loadTexture("assets/textures/waternormal2.png", watermaps[1]);
 	gfx::loadTexture("assets/textures/waterdudv.png", watermaps[2]);
+	unsigned int skyboxcubemap;
+	glGenTextures(1, &skyboxcubemap);
+	const std::vector<std::string> faces = {
+		"assets/textures/skybox/skybox_east.png",
+		"assets/textures/skybox/skybox_west.png",
+		"assets/textures/skybox/skybox_up.png",
+		"assets/textures/skybox/skybox_down.png",
+		"assets/textures/skybox/skybox_north.png",
+		"assets/textures/skybox/skybox_south.png"
+	};
+	gfx::loadCubemap(faces, skyboxcubemap);
 
 	ShaderProgram terrainShader("assets/shaders/terrainvert.glsl", "assets/shaders/terrainfrag.glsl");
 	ShaderProgram waterShader("assets/shaders/vert.glsl", "assets/shaders/waterfrag.glsl");
+	ShaderProgram skyboxShader("assets/shaders/skyboxvert.glsl", "assets/shaders/skyboxfrag.glsl");
 	terrainShader.use();
 	terrainShader.uniformFloat("maxheight", HEIGHT); 
 	terrainShader.uniformFloat("chunksz", CHUNK_SZ);
@@ -136,9 +150,24 @@ int main()
 			transform = glm::scale(transform, glm::vec3(CHUNK_SZ * 32.0f));
 			waterShader.uniformMat4x4("transform", transform);
 			quad.bind();
-			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+			glDrawElements(GL_TRIANGLES, quad.vertcount, GL_UNSIGNED_INT, 0);
 		}
 		glEnable(GL_CULL_FACE);
+
+		//Draw skybox
+		glCullFace(GL_FRONT);
+		glDepthMask(GL_FALSE);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxcubemap);
+		skyboxShader.use();
+		skyboxShader.uniformInt("skybox", 0);
+		skyboxShader.uniformMat4x4("persp", persp);
+		glm::mat4 skyboxView = glm::mat4(glm::mat3(view));
+		skyboxShader.uniformMat4x4("view", skyboxView);
+		cube.bind();	
+		glDrawElements(GL_TRIANGLES, cube.vertcount, GL_UNSIGNED_INT, 0);
+		glDepthMask(GL_TRUE);
+		glCullFace(GL_BACK);
 
 		//Update camera
 		cam.position += cam.velocity() * dt * SPEED;

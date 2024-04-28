@@ -3,6 +3,13 @@
 #include <math.h>
 #include <random>
 
+constexpr glm::vec2 gradients[4] = {
+	glm::vec2(1.0f, 0.0f),
+	glm::vec2(-1.0f, 0.0f),	
+	glm::vec2(0.0f, 1.0f),
+	glm::vec2(0.0f, -1.0f),
+};
+
 namespace rng {	
 	void createPermutation(permutation256 &p, int seed)
 	{
@@ -24,13 +31,6 @@ namespace rng {
 }
 
 namespace perlin {
-	const glm::vec2 gradients[4] = {
-		glm::vec2(1.0f, 0.0f),
-		glm::vec2(-1.0f, 0.0f),	
-		glm::vec2(0.0f, 1.0f),
-		glm::vec2(0.0f, -1.0f),
-	};
-
 	glm::vec2 gradient(int x, int y, const rng::permutation256 &p)
 	{
 		//Taken from wikipedia
@@ -99,5 +99,5 @@ namespace perlin {
 			lerpedlower = interpolate(lowerleft, lowerright, x - leftx),
 			lerpedupper = interpolate(upperleft, upperright, x - leftx);
 		return interpolate(lerpedlower, lerpedupper, y - lowery);
-	}	
+	}
 }
