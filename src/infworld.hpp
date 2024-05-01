@@ -5,7 +5,7 @@
 #include "noise.hpp"
 #include "gfx.hpp"
 
-constexpr unsigned int PREC = 64;
+constexpr unsigned int PREC = 32;
 constexpr float CHUNK_SZ = 32.0f;
 constexpr float FREQUENCY = 300.0f;
 constexpr size_t CHUNK_VERT_SZ = 3;

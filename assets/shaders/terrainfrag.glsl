@@ -12,8 +12,8 @@ uniform vec3 camerapos;
 
 uniform sampler2D terraintexture;
 
-const float VIEW_DIST = 1024.0;
-const float FOG_DIST = 512.0;
+const float VIEW_DIST = 1280.0;
+const float FOG_DIST = 128.0;
 const float MAX_DIST = VIEW_DIST + FOG_DIST;
 const float WATER_FOG_DIST = 24.0;
 

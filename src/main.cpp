@@ -14,11 +14,11 @@
 #include "gfx.hpp"
 #include "app.hpp"
 
-constexpr float SPEED = 16.0f;
-constexpr float FLY_SPEED = 10.0f;
+constexpr float SPEED = 32.0f;
+constexpr float FLY_SPEED = 20.0f;
 constexpr float HEIGHT = 120.0f;
 constexpr float SCALE = 2.5f;
-constexpr unsigned int RANGE = 7;
+constexpr unsigned int RANGE = 10;
 
 int main()
 {
