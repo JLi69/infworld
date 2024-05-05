@@ -69,7 +69,8 @@ namespace infworld {
 		const worldseed &permutations,
 		int chunkx,
 		int chunkz,
-		float maxheight
+		float maxheight,
+		float chunkscale
 	) {
 		mesh::ElementArrayBuffer<float> worldarraybuffer;
 
@@ -78,10 +79,10 @@ namespace infworld {
 
 		for(unsigned int i = 0; i <= PREC; i++) {
 			for(unsigned int j = 0; j <= PREC; j++) {
-				float x = -CHUNK_SZ + float(i) / float(PREC) * CHUNK_SZ * 2.0f;
-				float z = -CHUNK_SZ + float(j) / float(PREC) * CHUNK_SZ * 2.0f;
-				float tx = x + float(chunkx) * CHUNK_SZ * 2.0f;
-				float tz = z + float(chunkz) * CHUNK_SZ * 2.0f;
+				float x = -chunkscale + float(i) / float(PREC) * chunkscale * 2.0f;
+				float z = -chunkscale + float(j) / float(PREC) * chunkscale * 2.0f;
+				float tx = x + float(chunkx) * chunkscale * 2.0f;
+				float tz = z + float(chunkz) * chunkscale * 2.0f;
 
 				glm::vec3 vertex = getTerrainVertex(tx, tz, permutations, maxheight);
 
@@ -118,10 +119,11 @@ namespace infworld {
 		const infworld::worldseed &permutations,
 		int x,
 		int z,
-		float maxheight
+		float maxheight,
+		float chunkscale
 	) {
 		return {
-			infworld::createChunkElementArray(permutations, x, z, maxheight),
+			infworld::createChunkElementArray(permutations, x, z, maxheight, chunkscale),
 			{ x, z }
 		};
 	}
@@ -147,18 +149,20 @@ namespace infworld {
 	ChunkTable buildWorld(
 		unsigned int range,
 		const infworld::worldseed &permutations,
-		float maxheight
+		float maxheight,
+		float chunkscale 
 	) {
 		auto starttime = std::chrono::steady_clock::now();
 		unsigned int threadcount = 
 			std::max<unsigned int>(std::thread::hardware_concurrency(), 4);
 	
 		std::vector<ChunkData> builtchunks(threadcount);
-		ChunkTable chunks((2 * range + 1) * (2 * range + 1));
+		ChunkTable chunks(range, chunkscale, maxheight);
 		chunks.genBuffers();
 		auto build = 
-			[&builtchunks, &permutations, &maxheight](int x, int z, int i) {
-				builtchunks[i] = buildChunk(permutations, x, z, maxheight);
+			[&builtchunks, &permutations, &maxheight, &chunkscale]
+			(int x, int z, int i) {
+				builtchunks[i] = buildChunk(permutations, x, z, maxheight, chunkscale);
 			};
 		
 		//Multithreading to speed up terrain generation/building
@@ -181,105 +185,5 @@ namespace infworld {
 		printf("Time to generate world: %f\n", time);
 	
 		return chunks;
-	}
-
-	ChunkTable::ChunkTable(unsigned int count)
-	{
-		vaoids = std::vector<unsigned int>(count);
-		chunkpos = std::vector<infworld::ChunkPos>(count);
-		bufferids = std::vector<unsigned int>(BUFFER_PER_CHUNK * count);
-		chunkcount = count;
-	}
-
-	void ChunkTable::genBuffers()
-	{	
-		glGenVertexArrays(vaoids.size(), &vaoids[0]);	
-		glGenBuffers(bufferids.size(), &bufferids[0]);
-	}
-
-	void ChunkTable::clearBuffers()
-	{
-		glDeleteVertexArrays(vaoids.size(), &vaoids[0]);
-		glGenBuffers(bufferids.size(), &bufferids[0]);
-	}
-
-	void ChunkTable::addChunk(
-		unsigned int index,
-		const mesh::ElementArrayBuffer<float> &chunkmesh,
-		int x,
-		int z
-	) {
-		chunkpos.at(index) = { x, z };
-
-		glBindVertexArray(vaoids.at(index));
-
-		//Buffer 0 (vertex positions)
-		glBindBuffer(GL_ARRAY_BUFFER, bufferids.at(index * BUFFER_PER_CHUNK));
-		glBufferData(
-			GL_ARRAY_BUFFER, 
-			chunkmesh.mesh.vertices.size() * sizeof(float),
-			&chunkmesh.mesh.vertices[0],
-			GL_STATIC_DRAW
-		);
-		glVertexAttribPointer(
-			0,
-			1,
-			GL_FLOAT,
-			false,
-			CHUNK_VERT_SZ_BYTES,
-			(void*)0
-		);
-		glEnableVertexAttribArray(0);
-
-		//Buffer 1 (vertex normals)
-		glBindBuffer(GL_ARRAY_BUFFER, bufferids.at(index * BUFFER_PER_CHUNK + 1));
-		glBufferData(
-			GL_ARRAY_BUFFER,
-			chunkmesh.mesh.vertices.size() * sizeof(float),
-			&chunkmesh.mesh.vertices[0],
-			GL_STATIC_DRAW
-		);
-		glVertexAttribPointer(
-			1,
-			2,
-			GL_FLOAT, 
-			false,
-			CHUNK_VERT_SZ_BYTES,
-			(void*)(sizeof(float))
-		);
-		glEnableVertexAttribArray(1);
-
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferids.at(index * BUFFER_PER_CHUNK + 2));
-		glBufferData(
-			GL_ELEMENT_ARRAY_BUFFER,
-			chunkmesh.indices.size() * sizeof(unsigned int),
-			&chunkmesh.indices[0],
-			GL_STATIC_DRAW
-		);
-	}
-
-	void ChunkTable::addChunk(unsigned int index, const ChunkData &chunk)
-	{
-		addChunk(index, chunk.chunkmesh, chunk.position.x, chunk.position.z);
-	}
-
-	void ChunkTable::bindVao(unsigned int index)
-	{
-		glBindVertexArray(vaoids.at(index));
-	}
-
-	void ChunkTable::drawVao(unsigned int index)
-	{	
-		glDrawElements(GL_TRIANGLES, CHUNK_VERT_COUNT, GL_UNSIGNED_INT, 0);
-	}
-
-	infworld::ChunkPos ChunkTable::getPos(unsigned int index)
-	{
-		return chunkpos.at(index);
-	}
-
-	unsigned int ChunkTable::count() const
-	{
-		return chunkcount;
 	}
 }

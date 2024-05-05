@@ -17,7 +17,6 @@
 constexpr float SPEED = 32.0f;
 constexpr float FLY_SPEED = 20.0f;
 constexpr float HEIGHT = 120.0f;
-constexpr float SCALE = 2.5f;
 constexpr unsigned int RANGE = 10;
 
 int main()
@@ -32,8 +31,7 @@ int main()
 	infworld::worldseed permutations = infworld::makePermutations(seed, 8);
 
 	//Initialize glfw and glad, if any of this fails, kill the program
-	if(!glfwInit())
-		die("Failed to init glfw!");
+	if(!glfwInit()) die("Failed to init glfw!");
 	GLFWwindow* window = glfwCreateWindow(960, 720, "infworld", NULL, NULL);
 	if(!window)
 		die("Failed to create window!");
@@ -47,7 +45,8 @@ int main()
 		die("Failed to init glad!");
 	initMousePos(window);
 
-	infworld::ChunkTable chunks = infworld::buildWorld(RANGE, permutations, HEIGHT);
+	infworld::ChunkTable chunks = 
+		infworld::buildWorld(RANGE, permutations, HEIGHT, CHUNK_SZ);
 	//Quad
 	gfx::Vao quad = gfx::createQuadVao();
 	gfx::Vao cube = gfx::createCubeVao();
@@ -122,7 +121,7 @@ int main()
 			transform = glm::translate(transform, glm::vec3(x, 0.0f, z));
 			terrainShader.uniformMat4x4("transform", transform);
 			chunks.bindVao(i);
-			chunks.drawVao(i);
+			glDrawElements(GL_TRIANGLES, CHUNK_VERT_COUNT, GL_UNSIGNED_INT, 0);
 		}
 
 		//Draw water
@@ -172,6 +171,7 @@ int main()
 		//Update camera
 		cam.position += cam.velocity() * dt * SPEED;
 		cam.fly(dt, FLY_SPEED);
+		chunks.generateNewChunks(cam.position.x, cam.position.z, permutations);
 
 		glfwSwapBuffers(window);
 		gfx::outputErrors();
