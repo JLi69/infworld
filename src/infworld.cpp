@@ -58,10 +58,10 @@ namespace infworld {
 		float maxheight
 	) {
 		float h = getHeight(x, z, permutations) * maxheight;
-		if(h > -0.003f && h <= 0.0f)
-			h -= 0.003f;
-		else if(h < 0.003f && h >= 0.0f)
-			h += 0.003f;
+		if(h <= 0.0f)
+			h = std::min(-0.007f, h);
+		else if(h >= 0.0f)
+			h = std::max(0.007f, h);
 		return glm::vec3(x, h, z);
 	}
 

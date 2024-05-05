@@ -13,22 +13,21 @@
 #include "infworld.hpp"
 #include "gfx.hpp"
 #include "app.hpp"
+#include "arg.hpp"
 
 constexpr float SPEED = 32.0f;
 constexpr float FLY_SPEED = 20.0f;
 constexpr float HEIGHT = 120.0f;
-constexpr unsigned int RANGE = 10;
 
-int main()
+int main(int argc, char *argv[])
 {
+	Args argvals = parseArgs(argc, argv);
+
 	State* state = State::get();
 	Camera& cam = state->getCamera();
 
-	//Generate a random seed
-	std::random_device rd;
-	int seed = rd();
-	printf("seed: %d\n", seed);
-	infworld::worldseed permutations = infworld::makePermutations(seed, 8);
+	printf("seed: %d\n", argvals.seed);
+	infworld::worldseed permutations = infworld::makePermutations(argvals.seed, 8);
 
 	//Initialize glfw and glad, if any of this fails, kill the program
 	if(!glfwInit()) die("Failed to init glfw!");
@@ -46,7 +45,7 @@ int main()
 	initMousePos(window);
 
 	infworld::ChunkTable chunks = 
-		infworld::buildWorld(RANGE, permutations, HEIGHT, CHUNK_SZ);
+		infworld::buildWorld(argvals.range, permutations, HEIGHT, CHUNK_SZ);
 	//Quad
 	gfx::Vao quad = gfx::createQuadVao();
 	gfx::Vao cube = gfx::createCubeVao();
@@ -75,7 +74,11 @@ int main()
 	ShaderProgram terrainShader("assets/shaders/terrainvert.glsl", "assets/shaders/terrainfrag.glsl");
 	ShaderProgram waterShader("assets/shaders/vert.glsl", "assets/shaders/waterfrag.glsl");
 	ShaderProgram skyboxShader("assets/shaders/skyboxvert.glsl", "assets/shaders/skyboxfrag.glsl");
+	float viewdist = CHUNK_SZ * SCALE * 2.0f * float(argvals.range) * 0.8f;
+	waterShader.use();
+	waterShader.uniformFloat("viewdist", viewdist);
 	terrainShader.use();
+	waterShader.uniformFloat("viewdist", viewdist);
 	terrainShader.uniformFloat("maxheight", HEIGHT); 
 	terrainShader.uniformFloat("chunksz", CHUNK_SZ);
 	terrainShader.uniformInt("prec", PREC);
@@ -96,7 +99,7 @@ int main()
 		int w, h;
 		glfwGetWindowSize(window, &w, &h);
 		float aspect = float(w) / float(h);
-		glm::mat4 persp = glm::perspective(glm::radians(75.0f), aspect, 0.1f, 10000.0f);
+		glm::mat4 persp = glm::perspective(glm::radians(75.0f), aspect, 1.0f, 10000.0f);
 		//View matrix
 		glm::mat4 view = cam.viewMatrix();
 		
@@ -143,10 +146,11 @@ int main()
 		waterShader.uniformFloat("time", time);
 		for(int i = 0; i < 9; i++) {
 			int ix = i % 3 - 1, iz = i / 3 - 1;
-			float x = float(ix) * CHUNK_SZ * 32.0f * 2.0f, z = float(iz) * CHUNK_SZ * 32.0f * 2.0f;
+			float quadscale = CHUNK_SZ * 32.0f * SCALE;
+			float x = float(ix) * quadscale * 2.0f, z = float(iz) * quadscale * 2.0f;
 			glm::mat4 transform = glm::mat4(1.0f);
 			transform = glm::translate(transform, glm::vec3(cam.position.x + x, 0.0f, cam.position.z + z));
-			transform = glm::scale(transform, glm::vec3(CHUNK_SZ * 32.0f));
+			transform = glm::scale(transform, glm::vec3(quadscale));
 			waterShader.uniformMat4x4("transform", transform);
 			quad.bind();
 			glDrawElements(GL_TRIANGLES, quad.vertcount, GL_UNSIGNED_INT, 0);

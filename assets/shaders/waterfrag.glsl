@@ -12,9 +12,9 @@ uniform float time;
 uniform vec3 lightdir;
 uniform vec3 camerapos;
 
-const float VIEW_DIST = 1280.0;
+uniform float viewdist;
+
 const float FOG_DIST = 128.0;
-const float MAX_DIST = VIEW_DIST + FOG_DIST;
 const float WATER_FOG_DIST = 24.0;
 
 vec2 direction(float angle)
@@ -25,7 +25,8 @@ vec2 direction(float angle)
 void main()
 {
 	float d = length(fragpos - camerapos);
-	if(d > MAX_DIST)
+	float maxdist = viewdist + FOG_DIST;
+	if(d > maxdist)
 		discard;
 
 	vec2 dudv = (texture(waterdudv, fragpos.xz / 16.0).xy - vec2(0.5, 0.5)) * 2.0;
@@ -45,7 +46,7 @@ void main()
 	color.a = 0.8;
 
 	//fog
-	vec4 fogeffect = mix(color, vec4(0.5, 0.8, 1.0, 1.0), min(max(0.0, d - VIEW_DIST) / FOG_DIST, 1.0));
+	vec4 fogeffect = mix(color, vec4(0.5, 0.8, 1.0, 1.0), min(max(0.0, d - viewdist) / FOG_DIST, 1.0));
 	vec4 watereffect = mix(color, vec4(0.1, 0.7, 0.9, 1.0), min(max(0.0, d) / WATER_FOG_DIST, 1.0));
 	color = fogeffect * float(camerapos.y >= 0.0) + watereffect * float(camerapos.y < 0.0);
 }
