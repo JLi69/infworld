@@ -1,6 +1,7 @@
+#define _USE_MATH_DEFINES
+#include <math.h>
 #include "camera.hpp"
 #include <glm/gtc/matrix_transform.hpp>
-#include <math.h>
 
 CameraMovement::CameraMovement(
 	MovementDirection m,

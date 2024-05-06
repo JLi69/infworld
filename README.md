@@ -21,20 +21,25 @@ performance.
 ## compile
 
 Dependencies:
-[stb_image](https://github.com/nothings/stb/blob/master/stb_image.h)
-[glad](https://github.com/Dav1dde/glad)
-[glfw](https://github.com/glfw/glfw)
+[stb_image](https://github.com/nothings/stb/blob/master/stb_image.h) |
+[glad](https://github.com/Dav1dde/glad) |
+[glfw](https://github.com/glfw/glfw) |
 [glm](https://github.com/g-truc/glm)
 
 Linux:
+
 ```
 make -j$(nproc)
 ./infworld
 ```
 
-Windows
+Windows:
+
+Use [mingw-w64](https://sourceforge.net/projects/mingw-w64) to compile:
+
 ```
-TBA
+mingw32-make -j$(nproc)
+.\infworld.exe
 ```
 
 ## CREDITS
@@ -54,6 +59,8 @@ TBA
 (linked from this [wonderful video by ThinMatrix](https://www.youtube.com/watch?v=7T5o4vZXAvI))
 
 ### skybox
-[downloaded from](https://opengameart.org/content/sky-box-sunny-day)
+downloaded from [https://opengameart.org/content/sky-box-sunny-day](https://opengameart.org/content/sky-box-sunny-day)
+
 by KIIRA
+
 License: [CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/)

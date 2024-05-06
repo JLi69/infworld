@@ -30,7 +30,8 @@ int main(int argc, char *argv[])
 	infworld::worldseed permutations = infworld::makePermutations(argvals.seed, 8);
 
 	//Initialize glfw and glad, if any of this fails, kill the program
-	if(!glfwInit()) die("Failed to init glfw!");
+	if(!glfwInit()) 
+		die("Failed to init glfw!");
 	GLFWwindow* window = glfwCreateWindow(960, 720, "infworld", NULL, NULL);
 	if(!window)
 		die("Failed to create window!");
@@ -78,7 +79,7 @@ int main(int argc, char *argv[])
 	waterShader.use();
 	waterShader.uniformFloat("viewdist", viewdist);
 	terrainShader.use();
-	waterShader.uniformFloat("viewdist", viewdist);
+	terrainShader.uniformFloat("viewdist", viewdist);
 	terrainShader.uniformFloat("maxheight", HEIGHT); 
 	terrainShader.uniformFloat("chunksz", CHUNK_SZ);
 	terrainShader.uniformInt("prec", PREC);

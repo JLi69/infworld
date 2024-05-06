@@ -6,7 +6,13 @@ CPP=c++
 BIN_NAME=infworld
 INCLUDE=-Iinclude
 FLAGS=$(INCLUDE) -std=c++17 -O2 -DDISALLOW_ERRORS
-LD_FLAGS=-lglfw3 -lGL
+LD_FLAGS=-lglfw3
+
+ifeq ($(OS), Windows_NT)
+	LD_FLAGS+=-static-libgcc -static-libstdc++ -lopengl32 -lgdi32
+else
+	LD_FLAGS+=-lGL
+endif
 
 output: $(OBJ)
 	$(CPP) $(OBJ) $(GLAD) -o $(BIN_NAME) $(FLAGS) $(LD_FLAGS)
