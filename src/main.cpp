@@ -17,7 +17,7 @@
 
 constexpr float SPEED = 32.0f;
 constexpr float FLY_SPEED = 20.0f;
-constexpr float HEIGHT = 120.0f;
+constexpr float HEIGHT = 270.0f;
 
 int main(int argc, char *argv[])
 {
