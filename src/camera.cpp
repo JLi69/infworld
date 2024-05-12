@@ -152,3 +152,17 @@ void Camera::updateMovement(CameraMovement m, bool pressed)
 		flyingDirection = handleRelease(flyingDirection, m.flying);
 	}
 }
+
+geo::Frustum Camera::getViewFrustum(float znear, float zfar, float aspect, float fovy)
+{
+	float halfHeight = zfar * tanf(fovy / 2.0f);
+	float halfWidth = halfHeight * aspect;
+	return {
+		.back = geo::Plane(position + znear * forward(), forward()),
+		.front = geo::Plane(position + zfar * forward(), -forward()),
+		.top = geo::Plane(position, glm::cross(right(), zfar * forward() + up() * halfHeight)),
+		.bottom = geo::Plane(position, glm::cross(zfar * forward() - up() * halfHeight, right())),
+		.left = geo::Plane(position, glm::cross(up(), zfar * forward() - right() * halfWidth)),
+		.right = geo::Plane(position, glm::cross(zfar * forward() + right() * halfWidth, up())),
+	};
+}

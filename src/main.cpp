@@ -99,11 +99,13 @@ int main(int argc, char *argv[])
 		//Get perspective matrix
 		int w, h;
 		glfwGetWindowSize(window, &w, &h);
-		float aspect = float(w) / float(h);
-		glm::mat4 persp = glm::perspective(glm::radians(75.0f), aspect, 1.0f, 10000.0f);
+		const float aspect = float(w) / float(h);
+		const float fovy = glm::radians(75.0f);
+		glm::mat4 persp = glm::perspective(fovy, aspect, 2.0f, 20000.0f);
 		//View matrix
 		glm::mat4 view = cam.viewMatrix();
-		
+
+		geo::Frustum viewfrustum = cam.getViewFrustum(2.0f, 20000.0f, aspect, fovy);
 		//Draw terrain
 		terrainShader.use();
 		//Textures
@@ -120,6 +122,15 @@ int main(int argc, char *argv[])
 			infworld::ChunkPos p = chunks.getPos(i);
 			float x = float(p.z) * CHUNK_SZ * 2.0f * float(PREC) / float(PREC + 1);
 			float z = float(p.x) * CHUNK_SZ * 2.0f * float(PREC) / float(PREC + 1);
+
+			geo::AABB chunkAABB = geo::AABB(
+				glm::vec3(x, 0.0f, z) * SCALE,
+				glm::vec3(CHUNK_SZ * 2.0f, 999.0f, CHUNK_SZ * 2.0f) * SCALE
+			);
+
+			if(!geo::intersectsFrustum(viewfrustum, chunkAABB))
+				continue;
+
 			glm::mat4 transform = glm::mat4(1.0f);
 			transform = glm::scale(transform, glm::vec3(SCALE));
 			transform = glm::translate(transform, glm::vec3(x, 0.0f, z));

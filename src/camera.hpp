@@ -1,5 +1,6 @@
 #ifndef __CAMERA_H__
 #include <glm/glm.hpp>
+#include "geometry.hpp"
 
 const float JUMP_FORCE = 8.0f;
 const float GRAVITY = 20.0f;
@@ -45,6 +46,7 @@ struct Camera {
 	void fly(float dt, float speed);
 	void rotateCamera(float dmousex, float dmousey, float sensitivity);
 	void updateMovement(CameraMovement m, bool pressed);
+	geo::Frustum getViewFrustum(float znear, float zfar, float aspect, float fovy);
 };
 
 #define __CAMERA_H__
