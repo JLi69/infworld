@@ -95,16 +95,17 @@ void initMousePos(GLFWwindow *window)
 	State::get()->setMousePos(mousex, mousey);
 }
 
-void outputFps(float dt)
+void outputFps(float dt, unsigned int &chunksPerSecond)
 {
 	static float fpstimer = 0.0f;
 	static int frames = 0;
 	fpstimer += dt;
 
 	if(fpstimer > 1.0f) {
-		fprintf(stderr, "FPS: %d\n", frames);
+		fprintf(stderr, "FPS: %d | Chunks drawn: %d\n", frames, chunksPerSecond);
 		fpstimer = 0;
 		frames = 0;
+		chunksPerSecond = 0;
 	}
 	else
 		frames++;

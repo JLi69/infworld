@@ -1,4 +1,5 @@
-#ifndef __SHADER_H___
+#pragma once
+
 #include <string>
 #include <glad/glad.h>
 #include <glm/glm.hpp>
@@ -38,7 +39,3 @@ public:
 	void uniformFloat(const char *uniformName, float value);
 	void uniformInt(const char *uniformName, int value);
 };
-
-#define __SHADER_H__
-#endif
-

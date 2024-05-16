@@ -31,7 +31,7 @@ namespace mesh {
 }
 
 namespace gfx {
-	void Vao::bind()
+	void Vao::bind() const
 	{	
 		glBindVertexArray(vaoid);
 	}

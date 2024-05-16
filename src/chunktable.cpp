@@ -1,4 +1,6 @@
 #include "infworld.hpp"
+#include "glm/glm.hpp"
+#include "glm/gtc/matrix_transform.hpp"
 
 namespace infworld {
 	ChunkTable::ChunkTable(unsigned int range, float scale, float h)
@@ -152,5 +154,35 @@ namespace infworld {
 
 		centerx = ix;
 		centerz = iz;
+	}
+
+	unsigned int ChunkTable::draw(
+		ShaderProgram &shader,
+		const geo::Frustum &viewfrustum
+	) {
+		unsigned int drawCount = 0;
+		for(int i = 0; i < count(); i++) {
+			infworld::ChunkPos p = getPos(i);
+			float x = float(p.z) * CHUNK_SZ * 2.0f * float(PREC) / float(PREC + 1);
+			float z = float(p.x) * CHUNK_SZ * 2.0f * float(PREC) / float(PREC + 1);
+
+			geo::AABB chunkAABB = geo::AABB(
+				glm::vec3(x, 0.0f, z) * SCALE,
+				glm::vec3(CHUNK_SZ * 2.0f, HEIGHT * 2.0f, CHUNK_SZ * 2.0f) * SCALE
+			);
+
+			if(!geo::intersectsFrustum(viewfrustum, chunkAABB))
+				continue;
+
+			glm::mat4 transform = glm::mat4(1.0f);
+			transform = glm::scale(transform, glm::vec3(SCALE));
+			transform = glm::translate(transform, glm::vec3(x, 0.0f, z));
+			shader.uniformMat4x4("transform", transform);
+			bindVao(i);
+			glDrawElements(GL_TRIANGLES, CHUNK_VERT_COUNT, GL_UNSIGNED_INT, 0);
+			drawCount++;
+		}
+
+		return drawCount;
 	}
 }

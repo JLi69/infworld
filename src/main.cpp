@@ -17,7 +17,6 @@
 
 constexpr float SPEED = 32.0f;
 constexpr float FLY_SPEED = 20.0f;
-constexpr float HEIGHT = 270.0f;
 
 int main(int argc, char *argv[])
 {
@@ -92,6 +91,7 @@ int main(int argc, char *argv[])
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	float dt = 0.0f;
 	float time = 0.0f;
+	unsigned int chunksPerSecond = 0; //Number of chunks drawn per second
 	while(!glfwWindowShouldClose(window)) {
 		float start = glfwGetTime();
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -104,8 +104,8 @@ int main(int argc, char *argv[])
 		glm::mat4 persp = glm::perspective(fovy, aspect, 2.0f, 20000.0f);
 		//View matrix
 		glm::mat4 view = cam.viewMatrix();
-
 		geo::Frustum viewfrustum = cam.getViewFrustum(2.0f, 20000.0f, aspect, fovy);
+
 		//Draw terrain
 		terrainShader.use();
 		//Textures
@@ -118,29 +118,10 @@ int main(int argc, char *argv[])
 		terrainShader.uniformVec3("lightdir", glm::normalize(glm::vec3(-1.0f)));
 		terrainShader.uniformVec3("camerapos", cam.position);
 		terrainShader.uniformFloat("time", time);
-		for(int i = 0; i < chunks.count(); i++) {
-			infworld::ChunkPos p = chunks.getPos(i);
-			float x = float(p.z) * CHUNK_SZ * 2.0f * float(PREC) / float(PREC + 1);
-			float z = float(p.x) * CHUNK_SZ * 2.0f * float(PREC) / float(PREC + 1);
-
-			geo::AABB chunkAABB = geo::AABB(
-				glm::vec3(x, 0.0f, z) * SCALE,
-				glm::vec3(CHUNK_SZ * 2.0f, 999.0f, CHUNK_SZ * 2.0f) * SCALE
-			);
-
-			if(!geo::intersectsFrustum(viewfrustum, chunkAABB))
-				continue;
-
-			glm::mat4 transform = glm::mat4(1.0f);
-			transform = glm::scale(transform, glm::vec3(SCALE));
-			transform = glm::translate(transform, glm::vec3(x, 0.0f, z));
-			terrainShader.uniformMat4x4("transform", transform);
-			chunks.bindVao(i);
-			glDrawElements(GL_TRIANGLES, CHUNK_VERT_COUNT, GL_UNSIGNED_INT, 0);
-		}
+		unsigned int drawCount = chunks.draw(terrainShader, viewfrustum);
+		chunksPerSecond += drawCount;
 
 		//Draw water
-		glDisable(GL_CULL_FACE);
 		waterShader.use();
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, watermaps[0]);
@@ -156,6 +137,7 @@ int main(int argc, char *argv[])
 		waterShader.uniformVec3("lightdir", glm::normalize(glm::vec3(-1.0f)));
 		waterShader.uniformVec3("camerapos", cam.position);
 		waterShader.uniformFloat("time", time);
+		glDisable(GL_CULL_FACE);
 		for(int i = 0; i < 9; i++) {
 			int ix = i % 3 - 1, iz = i / 3 - 1;
 			float quadscale = CHUNK_SZ * 32.0f * SCALE;
@@ -171,7 +153,6 @@ int main(int argc, char *argv[])
 
 		//Draw skybox
 		glCullFace(GL_FRONT);
-		glDepthMask(GL_FALSE);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxcubemap);
 		skyboxShader.use();
@@ -179,9 +160,8 @@ int main(int argc, char *argv[])
 		skyboxShader.uniformMat4x4("persp", persp);
 		glm::mat4 skyboxView = glm::mat4(glm::mat3(view));
 		skyboxShader.uniformMat4x4("view", skyboxView);
-		cube.bind();	
+		cube.bind();
 		glDrawElements(GL_TRIANGLES, cube.vertcount, GL_UNSIGNED_INT, 0);
-		glDepthMask(GL_TRUE);
 		glCullFace(GL_BACK);
 
 		//Update camera
@@ -193,7 +173,7 @@ int main(int argc, char *argv[])
 		gfx::outputErrors();
 		glfwPollEvents();
 		time += dt;
-		outputFps(dt);
+		outputFps(dt, chunksPerSecond);
 		dt = glfwGetTime() - start;
 	}
 

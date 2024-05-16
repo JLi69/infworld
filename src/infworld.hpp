@@ -4,9 +4,12 @@
 #include <glm/glm.hpp>
 #include "noise.hpp"
 #include "gfx.hpp"
+#include "geometry.hpp"
+#include "shader.hpp"
 
 constexpr unsigned int PREC = 32;
 constexpr float CHUNK_SZ = 48.0f;
+constexpr float HEIGHT = 270.0f;
 constexpr float SCALE = 2.5f;
 constexpr float FREQUENCY = 720.0f;
 constexpr size_t CHUNK_VERT_SZ = 3;
@@ -66,6 +69,11 @@ namespace infworld {
 			float camerax,
 			float cameraz,
 			const worldseed &permutations
+		);
+		//returns the number of chunks drawn
+		unsigned int draw(
+			ShaderProgram &shader,
+			const geo::Frustum &viewfrustum
 		);
 	};
 

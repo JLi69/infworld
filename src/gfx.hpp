@@ -33,7 +33,7 @@ namespace gfx {
 		unsigned int vertcount;
 		unsigned int vaoid;
 		std::vector<unsigned int> buffers;
-		void bind();
+		void bind() const;
 	};
 	//Create a quad vao (only position vectors - no texture/normal data)
 	Vao createQuadVao();

@@ -35,7 +35,7 @@ void usage(char *argv[])
 	fprintf(stderr, "-s|--seed [number]\n");
 	fprintf(stderr, "\tset a seed for the world, default: random\n");
 	fprintf(stderr, "-r|--range [number]\n");
-	fprintf(stderr, "\tset a viewing range, default: 10 chunks\n");
+	fprintf(stderr, "\tset a viewing range, default: %d chunks\n", RANGE);
 	fprintf(stderr, "\tvalue should be between %d and %d\n", MIN_RANGE, MAX_RANGE);
 	fprintf(stderr, "\tNOTE: setting range to a high value will result in lower performance\n");	
 	fprintf(stderr, "-h|--help\n");
