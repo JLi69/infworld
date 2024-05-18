@@ -8,7 +8,7 @@
 #include "shader.hpp"
 
 constexpr unsigned int PREC = 32;
-constexpr float CHUNK_SZ = 48.0f;
+constexpr float CHUNK_SZ = 32.0f;
 constexpr float HEIGHT = 270.0f;
 constexpr float SCALE = 2.5f;
 constexpr float FREQUENCY = 720.0f;
@@ -51,6 +51,7 @@ namespace infworld {
 		std::vector<ChunkPos> newChunks;
 	public:
 		ChunkTable(unsigned int range, float scale, float h);
+		ChunkTable();
 		void genBuffers();
 		void clearBuffers();
 		void addChunk(
@@ -71,10 +72,14 @@ namespace infworld {
 			const worldseed &permutations
 		);
 		//returns the number of chunks drawn
+		unsigned int draw(ShaderProgram &shader, const geo::Frustum &viewfrustum);
 		unsigned int draw(
 			ShaderProgram &shader,
+			unsigned int minrange,
 			const geo::Frustum &viewfrustum
 		);
+		float scale() const;
+		unsigned int range() const;
 	};
 
 	worldseed makePermutations(int seed, unsigned int count);

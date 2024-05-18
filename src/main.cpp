@@ -17,6 +17,21 @@
 
 constexpr float SPEED = 32.0f;
 constexpr float FLY_SPEED = 20.0f;
+constexpr unsigned int MAX_LOD = 5;
+constexpr float LOD_SCALE = 2.0f;
+
+void generateChunks(
+	const infworld::worldseed &permutations,
+	infworld::ChunkTable *chunktables,
+	unsigned int range
+) {
+	float sz = CHUNK_SZ;
+	for(int i = 0; i < MAX_LOD; i++) {
+		chunktables[i] = 
+			infworld::buildWorld(range, permutations, HEIGHT, sz);
+		sz *= LOD_SCALE;
+	}
+}
 
 int main(int argc, char *argv[])
 {
@@ -44,21 +59,19 @@ int main(int argc, char *argv[])
 		die("Failed to init glad!");
 	initMousePos(window);
 
-	infworld::ChunkTable chunks = 
-		infworld::buildWorld(argvals.range, permutations, HEIGHT, CHUNK_SZ);
+	infworld::ChunkTable chunktables[MAX_LOD];	
+	generateChunks(permutations, chunktables, argvals.range);
 	//Quad
 	gfx::Vao quad = gfx::createQuadVao();
-	gfx::Vao cube = gfx::createCubeVao();
 	//Cube
+	gfx::Vao cube = gfx::createCubeVao();
 	//Textures
 	unsigned int terraintextures;
 	glGenTextures(1, &terraintextures);
 	gfx::loadTexture("assets/textures/terraintextures.png", terraintextures);
-	unsigned int watermaps[3];
-	glGenTextures(3, watermaps);
-	gfx::loadTexture("assets/textures/waternormal1.png", watermaps[0]);
-	gfx::loadTexture("assets/textures/waternormal2.png", watermaps[1]);
-	gfx::loadTexture("assets/textures/waterdudv.png", watermaps[2]);
+	unsigned int watermaps;
+	glGenTextures(1, &watermaps);
+	gfx::loadTexture("assets/textures/watermaps.png", watermaps);
 	unsigned int skyboxcubemap;
 	glGenTextures(1, &skyboxcubemap);
 	const std::vector<std::string> faces = {
@@ -72,15 +85,17 @@ int main(int argc, char *argv[])
 	gfx::loadCubemap(faces, skyboxcubemap);
 
 	ShaderProgram terrainShader("assets/shaders/terrainvert.glsl", "assets/shaders/terrainfrag.glsl");
-	ShaderProgram waterShader("assets/shaders/vert.glsl", "assets/shaders/waterfrag.glsl");
+	ShaderProgram waterShader("assets/shaders/instancedvert.glsl", "assets/shaders/waterfrag.glsl");
+	ShaderProgram simpleWaterShader("assets/shaders/instancedvert.glsl", "assets/shaders/watersimplefrag.glsl");
 	ShaderProgram skyboxShader("assets/shaders/skyboxvert.glsl", "assets/shaders/skyboxfrag.glsl");
-	float viewdist = CHUNK_SZ * SCALE * 2.0f * float(argvals.range) * 0.8f;
+	float viewdist = CHUNK_SZ * SCALE * 2.0f * float(argvals.range) * 0.8f * std::pow(LOD_SCALE, MAX_LOD - 1);
 	waterShader.use();
 	waterShader.uniformFloat("viewdist", viewdist);
+	simpleWaterShader.use();
+	simpleWaterShader.uniformFloat("viewdist", viewdist);
 	terrainShader.use();
 	terrainShader.uniformFloat("viewdist", viewdist);
 	terrainShader.uniformFloat("maxheight", HEIGHT); 
-	terrainShader.uniformFloat("chunksz", CHUNK_SZ);
 	terrainShader.uniformInt("prec", PREC);
 
 	glClearColor(0.5f, 0.8f, 1.0f, 1.0f);
@@ -104,7 +119,7 @@ int main(int argc, char *argv[])
 		glm::mat4 persp = glm::perspective(fovy, aspect, 2.0f, 20000.0f);
 		//View matrix
 		glm::mat4 view = cam.viewMatrix();
-		geo::Frustum viewfrustum = cam.getViewFrustum(2.0f, 20000.0f, aspect, fovy);
+		geo::Frustum viewfrustum = cam.getViewFrustum(2.0f, 20000.0f, aspect, fovy);	
 
 		//Draw terrain
 		terrainShader.use();
@@ -118,37 +133,41 @@ int main(int argc, char *argv[])
 		terrainShader.uniformVec3("lightdir", glm::normalize(glm::vec3(-1.0f)));
 		terrainShader.uniformVec3("camerapos", cam.position);
 		terrainShader.uniformFloat("time", time);
-		unsigned int drawCount = chunks.draw(terrainShader, viewfrustum);
+		unsigned int drawCount = 0;
+		for(int i = 0; i < MAX_LOD; i++) {
+			terrainShader.uniformFloat("chunksz", chunktables[i].scale());
+			if(i == 0)
+				drawCount += chunktables[i].draw(terrainShader, viewfrustum);
+			else {
+				int minrange = chunktables[i - 1].range() / int(LOD_SCALE);
+				drawCount += chunktables[i].draw(terrainShader, minrange, viewfrustum);
+			}
+		}
 		chunksPerSecond += drawCount;
 
+		glDisable(GL_CULL_FACE);
+		quad.bind();
+		const int waterrange = 4;
+		const int count = (waterrange * 2 + 1) * (waterrange * 2 + 1);
+		const float quadscale = CHUNK_SZ * 32.0f * SCALE;
 		//Draw water
 		waterShader.use();
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, watermaps[0]);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, watermaps[1]);
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, watermaps[2]);
-		waterShader.uniformInt("waternormal1", 0);
-		waterShader.uniformInt("waternormal2", 1);
-		waterShader.uniformInt("waterdudv", 2);
+		glBindTexture(GL_TEXTURE_2D, watermaps);
+		waterShader.uniformInt("range", waterrange);
+		waterShader.uniformFloat("scale", quadscale);
+		waterShader.uniformInt("waternormals", 0);
+		waterShader.uniformInt("waterdudv", 1);
 		waterShader.uniformMat4x4("persp", persp);
 		waterShader.uniformMat4x4("view", view);
 		waterShader.uniformVec3("lightdir", glm::normalize(glm::vec3(-1.0f)));
 		waterShader.uniformVec3("camerapos", cam.position);
 		waterShader.uniformFloat("time", time);
-		glDisable(GL_CULL_FACE);
-		for(int i = 0; i < 9; i++) {
-			int ix = i % 3 - 1, iz = i / 3 - 1;
-			float quadscale = CHUNK_SZ * 32.0f * SCALE;
-			float x = float(ix) * quadscale * 2.0f, z = float(iz) * quadscale * 2.0f;
-			glm::mat4 transform = glm::mat4(1.0f);
-			transform = glm::translate(transform, glm::vec3(cam.position.x + x, 0.0f, cam.position.z + z));
-			transform = glm::scale(transform, glm::vec3(quadscale));
-			waterShader.uniformMat4x4("transform", transform);
-			quad.bind();
-			glDrawElements(GL_TRIANGLES, quad.vertcount, GL_UNSIGNED_INT, 0);
-		}
+		glm::mat4 transform = glm::mat4(1.0f);
+		transform = glm::translate(transform, glm::vec3(cam.position.x, 0.0f, cam.position.z));
+		transform = glm::scale(transform, glm::vec3(quadscale));
+		waterShader.uniformMat4x4("transform", transform);
+		glDrawElementsInstanced(GL_TRIANGLES, quad.vertcount, GL_UNSIGNED_INT, 0, count);
 		glEnable(GL_CULL_FACE);
 
 		//Draw skybox
@@ -167,7 +186,8 @@ int main(int argc, char *argv[])
 		//Update camera
 		cam.position += cam.velocity() * dt * SPEED;
 		cam.fly(dt, FLY_SPEED);
-		chunks.generateNewChunks(cam.position.x, cam.position.z, permutations);
+		for(int i = 0; i < MAX_LOD; i++)
+			chunktables[i].generateNewChunks(cam.position.x, cam.position.z, permutations);
 
 		glfwSwapBuffers(window);
 		gfx::outputErrors();
@@ -178,7 +198,8 @@ int main(int argc, char *argv[])
 	}
 
 	//Clean up	
-	chunks.clearBuffers();
+	for(int i = 0; i < MAX_LOD; i++)
+		chunktables[i].clearBuffers();
 	gfx::destroyVao(quad);
 	glfwTerminate();
 }

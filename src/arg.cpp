@@ -5,9 +5,9 @@
 #include <random>
 
 //Default range
-constexpr unsigned int RANGE = 10;
-constexpr unsigned int MIN_RANGE = 3;
-constexpr unsigned int MAX_RANGE = 64;
+constexpr unsigned int RANGE = 8;
+constexpr unsigned int MIN_RANGE = 6;
+constexpr unsigned int MAX_RANGE = 48;
 
 bool streq(const char *s1, const char *s2)
 {
