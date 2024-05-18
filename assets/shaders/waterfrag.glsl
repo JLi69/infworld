@@ -53,6 +53,6 @@ void main()
 	//fog
 	float d = length(fragpos - camerapos);
 	vec4 fogeffect = mix(color, vec4(0.5, 0.8, 1.0, 1.0), clamp((d - viewdist) / FOG_DIST, 0.0, 1.0));
-	vec4 watereffect = mix(color, vec4(0.1, 0.7, 0.9, 1.0), clamp((d - viewdist) / WATER_FOG_DIST, 0.0, 1.0));
+	vec4 watereffect = mix(color, vec4(0.1, 0.7, 0.9, 1.0), clamp(d / WATER_FOG_DIST, 0.0, 1.0));
 	color = fogeffect * float(camerapos.y >= 0.0) + watereffect * float(camerapos.y < 0.0);
 }
