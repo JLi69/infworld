@@ -134,10 +134,22 @@ void ShaderProgram::uniformMat4x4(const char *uniformName, const glm::mat4 &mat)
 	glUniformMatrix4fv(location, 1, false, glm::value_ptr(mat));
 }
 
+void ShaderProgram::uniformVec4(const char *uniformName, const glm::vec4 &vec)
+{
+	int location = getUniformLocation(uniformName);
+	glUniform4f(location, vec.x, vec.y, vec.z, vec.w);
+}
+
 void ShaderProgram::uniformVec3(const char *uniformName, const glm::vec3 &vec)
 {
 	int location = getUniformLocation(uniformName);
 	glUniform3f(location, vec.x, vec.y, vec.z);
+}
+
+void ShaderProgram::uniformVec2(const char *uniformName, const glm::vec2 &vec)
+{
+	int location = getUniformLocation(uniformName);
+	glUniform2f(location, vec.x, vec.y);
 }
 
 void ShaderProgram::uniformFloat(const char *uniformName, float value)

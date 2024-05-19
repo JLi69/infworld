@@ -48,7 +48,7 @@ float heightToMix()
 		mixval(0.6, 0.7, height);
 }
 
-vec4 landcolor()
+vec4 getcolor()
 {
 	vec2 tc = fract(fragpos.xz / 16.0) * vec2(0.248, 1.0) + vec2(0.001, 0.0);
 	vec2 uv1 = getuv1();
@@ -65,12 +65,9 @@ vec4 landcolor()
 void main()
 {
 	float d = length(fragpos - camerapos);
-	float maxdist = viewdist + FOG_DIST;
-	if(d > maxdist)
-		discard;
 
-	color = landcolor() * lighting;
-	color.a = 1.0;	
+	color = getcolor() * lighting;
+	color.a = 1.0;
 	//fog
 	vec4 fogeffect = mix(color, vec4(0.5, 0.8, 1.0, 1.0), min(max(0.0, d - viewdist) / FOG_DIST, 1.0));
 	vec4 watereffect = mix(color, vec4(0.1, 0.7, 0.9, 1.0), min(max(0.0, d) / WATER_FOG_DIST, 1.0));
