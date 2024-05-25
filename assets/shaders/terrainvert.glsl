@@ -21,8 +21,9 @@ void main()
 	int ix = gl_VertexID - int(gl_VertexID / (prec + 1)) * (prec + 1);
 	int iz = int(gl_VertexID / (prec + 1));
 
-	float vx = -chunksz + float(ix) / float(prec + 1) * 2.0 * chunksz;
-	float vz = -chunksz + float(iz) / float(prec + 1) * 2.0 * chunksz;
+	float halfinc = chunksz / float(prec + 1);
+	float vx = -chunksz + float(ix) / float(prec + 1) * 2.0 * chunksz + halfinc;
+	float vz = -chunksz + float(iz) / float(prec + 1) * 2.0 * chunksz + halfinc;
 	vec4 pos = vec4(vx, y * maxheight, vz, 1.0);
 	height = pos.y / maxheight;
 	gl_Position = persp * view * transform * pos;

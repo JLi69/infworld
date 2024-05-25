@@ -133,9 +133,36 @@ int main(int argc, char *argv[])
 		terrainShader.uniformVec3("lightdir", glm::normalize(glm::vec3(-1.0f)));
 		terrainShader.uniformVec3("camerapos", cam.position);
 		terrainShader.uniformFloat("time", time);
-		unsigned int drawCount = 0;
+		unsigned int drawCount = 0;	
+
 		for(int i = 0; i < MAX_LOD; i++) {
 			terrainShader.uniformFloat("chunksz", chunktables[i].scale());
+
+			if(i < MAX_LOD - 1) {
+				float chunkscale = 
+					chunktables[i + 1].scale() * 
+					2.0f * 
+					float(PREC) / float(PREC + 1);
+				float range = float(chunktables[i + 1].range()) / LOD_SCALE - 0.5f;
+				//Slight amount of overlap to mitigate cracks in terrain
+				//We increase this amount due to the terrain becoming less precise
+				//and more likely to have cracks
+				float d = 8.0f * float(i) + 4.0f;
+				float maxrange = chunkscale * range * SCALE + d;
+				infworld::ChunkPos center = chunktables[i + 1].getCenter();
+				
+				glm::vec2 centerpos = glm::vec2(float(center.z), float(center.x));
+				centerpos *= float(PREC) / float(PREC + 1);
+				centerpos *= chunktables[i + 1].scale() * SCALE * 2.0f;
+				
+				terrainShader.uniformFloat("maxrange", maxrange);
+				terrainShader.uniformVec2("center", centerpos);
+			}
+			else {
+				terrainShader.uniformVec2("center", glm::vec2(0.0f));
+				terrainShader.uniformFloat("maxrange", -1.0f);
+			}
+
 			if(i == 0)
 				drawCount += chunktables[i].draw(terrainShader, viewfrustum);
 			else {

@@ -17,6 +17,9 @@ uniform float viewdist;
 const float FOG_DIST = 128.0;
 const float WATER_FOG_DIST = 24.0;
 
+uniform vec2 center;
+uniform float maxrange;
+
 vec2 getuv1()
 {
 	return
@@ -65,6 +68,12 @@ vec4 getcolor()
 void main()
 {
 	float d = length(fragpos - camerapos);
+
+	float range = max(abs(fragpos.x - center.x), abs(fragpos.z - center.y));
+	//We discard fragments that are beyond a certain range to prevent overlap
+	//with terrain of lower level of detail
+	if(range > maxrange && maxrange > 0.0)
+		discard;
 
 	color = getcolor() * lighting;
 	color.a = 1.0;
