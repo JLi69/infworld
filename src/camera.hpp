@@ -2,9 +2,6 @@
 #include <glm/glm.hpp>
 #include "geometry.hpp"
 
-const float JUMP_FORCE = 8.0f;
-const float GRAVITY = 20.0f;
-
 enum MovementDirection {
 	NONE,
 	FORWARD,
