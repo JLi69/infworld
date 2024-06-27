@@ -8,6 +8,15 @@ namespace mesh {
 	template<typename T>
 	struct Mesh {
 		std::vector<T> vertices;
+		size_t size() const
+		{
+			return vertices.size() * sizeof(T);
+		}
+		
+		const void* ptr() const
+		{
+			return &vertices[0];
+		}
 	};
 
 	//Mesh of floats
@@ -20,12 +29,41 @@ namespace mesh {
 	};
 	
 	void addToMesh(Meshf &mesh, const glm::vec3 &v);
-	void addTriangle(
-		Meshf &mesh,
-		const glm::vec3 &v1,
-		const glm::vec3 &v2,
-		const glm::vec3 &v3
-	);	
+	void addToMesh(Meshf &mesh, const glm::vec2 &v);	
+
+	//Combination of vertex, normal, and texture coordinate data
+	struct Model {
+		std::vector<glm::vec3> vertices;
+		std::vector<glm::vec3> normals;
+		std::vector<glm::vec2> texturecoords;
+		std::vector<unsigned int> indices;
+
+		Meshf vertData() const;
+		Meshf normalData() const;
+		Meshf tcData() const;
+		void dataToBuffers(const std::vector<unsigned int> &buffers) const;
+	};
+	
+	//Creates a cone model with normal, vertex data, and texture coordinates
+	//These cone models do not have bottoms
+	//This model has texture coordinates that "wraps" a rectangular texture
+	//around the cone
+	Model createConeModel1(unsigned int prec);
+	//This model has texture coordinates that has texture coordinates that takes
+	//a circular section of a texture, the center of the circle is the tip of the
+	//cone and the edges of the circle are the bottom edge of the cone
+	Model createConeModel2(unsigned int prec);
+	//Makes a frustum model (does not have a top or bottom)
+	//radius1 is the bottom of the frustum, radius2 is the top of the frustum
+	Model createFrustumModel(unsigned int prec, float radius1, float radius2);
+	//Makes a plane model
+	Model createPlaneModel(unsigned int subdivision);
+	//Transforms a model using a transformation matrix
+	void transformModel(Model &model, const glm::mat4 &transform);
+	//Transforms texture coordinates of a model
+	void transformModelTc(Model &model, const glm::mat4 &transform);
+	//Combines two models, returns the combined model
+	Model mergeModels(const Model &model1, const Model &model2);
 }
 
 namespace gfx {
@@ -33,6 +71,7 @@ namespace gfx {
 		unsigned int vertcount;
 		unsigned int vaoid;
 		std::vector<unsigned int> buffers;
+		void genBuffers(unsigned int count);
 		void bind() const;
 	};
 	//Create a quad vao (only position vectors - no texture/normal data)

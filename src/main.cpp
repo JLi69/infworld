@@ -14,6 +14,7 @@
 #include "gfx.hpp"
 #include "app.hpp"
 #include "arg.hpp"
+#include "plants.hpp"
 
 constexpr float SPEED = 32.0f;
 constexpr float FLY_SPEED = 20.0f;
@@ -41,7 +42,7 @@ int main(int argc, char *argv[])
 	Camera& cam = state->getCamera();
 
 	printf("seed: %d\n", argvals.seed);
-	infworld::worldseed permutations = infworld::makePermutations(argvals.seed, 8);
+	infworld::worldseed permutations = infworld::makePermutations(argvals.seed, 9);
 
 	//Initialize glfw and glad, if any of this fails, kill the program
 	if(!glfwInit()) 
@@ -61,10 +62,19 @@ int main(int argc, char *argv[])
 
 	infworld::ChunkTable chunktables[MAX_LOD];	
 	generateChunks(permutations, chunktables, argvals.range);
+	infworld::DecorationTable decorations = infworld::DecorationTable(48, CHUNK_SZ);
+	decorations.genDecorations(permutations);
 	//Quad
 	gfx::Vao quad = gfx::createQuadVao();
 	//Cube
 	gfx::Vao cube = gfx::createCubeVao();
+	//Trees
+	gfx::Vao 
+		pinetree = plants::createPineTreeModel(8),
+		pinetreelowdetail = plants::createPineTreeModel(4);
+	gfx::Vao 
+		tree = plants::createTreeModel(8),
+		treelowdetail = plants::createTreeModel(4);
 	//Textures
 	unsigned int terraintextures;
 	glGenTextures(1, &terraintextures);
@@ -72,6 +82,11 @@ int main(int argc, char *argv[])
 	unsigned int watermaps;
 	glGenTextures(1, &watermaps);
 	gfx::loadTexture("assets/textures/watermaps.png", watermaps);
+	unsigned int pinetexture, treetexture;
+	glGenTextures(1, &pinetexture);
+	glGenTextures(1, &treetexture);	
+	gfx::loadTexture("assets/textures/pinetreetexture.png", pinetexture);
+	gfx::loadTexture("assets/textures/treetexture.png", treetexture);
 	unsigned int skyboxcubemap;
 	glGenTextures(1, &skyboxcubemap);
 	const std::vector<std::string> faces = {
@@ -88,6 +103,7 @@ int main(int argc, char *argv[])
 	ShaderProgram waterShader("assets/shaders/instancedvert.glsl", "assets/shaders/waterfrag.glsl");
 	ShaderProgram simpleWaterShader("assets/shaders/instancedvert.glsl", "assets/shaders/watersimplefrag.glsl");
 	ShaderProgram skyboxShader("assets/shaders/skyboxvert.glsl", "assets/shaders/skyboxfrag.glsl");
+	ShaderProgram treeShader("assets/shaders/tree-vert.glsl", "assets/shaders/textured-frag.glsl");
 	float viewdist = CHUNK_SZ * SCALE * 2.0f * float(argvals.range) * 0.8f * std::pow(LOD_SCALE, MAX_LOD - 1);
 	waterShader.use();
 	waterShader.uniformFloat("viewdist", viewdist);
@@ -173,6 +189,57 @@ int main(int argc, char *argv[])
 		chunksPerSecond += drawCount;
 
 		glDisable(GL_CULL_FACE);
+		//Display trees	
+		treeShader.use();
+		treeShader.uniformMat4x4("persp", persp);
+		treeShader.uniformMat4x4("view", view);
+		treeShader.uniformVec3("lightdir", glm::normalize(glm::vec3(-1.0f)));
+		treeShader.uniformVec3("camerapos", cam.position);
+		treeShader.uniformFloat("time", time);
+		treeShader.uniformFloat("windstrength", SCALE * 3.0f);
+		//Draw pine trees
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, pinetexture);
+		pinetree.bind();
+		decorations.drawDecorations(
+			treeShader,
+			infworld::PINE_TREE,
+			pinetree,
+			viewfrustum,
+			0,
+			5
+		);
+		pinetreelowdetail.bind();
+		decorations.drawDecorations(
+			treeShader,
+			infworld::PINE_TREE,
+			pinetreelowdetail,
+			viewfrustum,
+			5,
+			999
+		);
+		//Draw trees
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, treetexture);
+		tree.bind();
+		decorations.drawDecorations(
+			treeShader,
+			infworld::TREE,
+			tree,
+			viewfrustum,
+			0,
+			5
+		);
+		treelowdetail.bind();
+		decorations.drawDecorations(
+			treeShader,
+			infworld::TREE,
+			treelowdetail,
+			viewfrustum,
+			5,
+			32
+		);
+
 		quad.bind();
 		const int waterrange = 4;
 		const int count = (waterrange * 2 + 1) * (waterrange * 2 + 1);
@@ -215,6 +282,7 @@ int main(int argc, char *argv[])
 		cam.fly(dt, FLY_SPEED);
 		for(int i = 0; i < MAX_LOD; i++)
 			chunktables[i].generateNewChunks(cam.position.x, cam.position.z, permutations);
+		decorations.genNewDecorations(cam.position.x, cam.position.z, permutations);
 
 		glfwSwapBuffers(window);
 		gfx::outputErrors();

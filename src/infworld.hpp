@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <vector>
 #include <glm/glm.hpp>
+#include <random>
 #include "noise.hpp"
 #include "gfx.hpp"
 #include "geometry.hpp"
@@ -34,6 +35,60 @@ namespace infworld {
 	struct ChunkData {
 		mesh::ElementArrayBuffer<float> chunkmesh;
 		ChunkPos position;
+	};
+
+	enum DecorationType {
+		TREE,
+		PINE_TREE,
+	};
+
+	struct Decoration {
+		glm::vec3 position;
+		DecorationType type;
+	};
+
+	class DecorationTable {
+		unsigned int size;
+		int centerx = 0, centerz = 0;
+		float chunkscale;
+		//"Chunk decorations" - this is supposed to represent features such
+		//as trees (in this case we only have two types of trees)
+		std::vector<std::vector<Decoration>> decorations;
+		std::vector<ChunkPos> positions;
+
+		void genPineTrees(
+			const worldseed &permutations,
+			int x,
+			int z,
+			unsigned int index,
+			std::minstd_rand0 &lcg
+		);
+		void genTrees(
+			const worldseed &permutations,
+			int x,
+			int z,
+			unsigned int index,
+			std::minstd_rand0 &lcg
+		);
+	public:
+		DecorationTable(unsigned int sz, float scale);
+		//Draw chunk decorations
+		void drawDecorations(
+			ShaderProgram &shader,
+			DecorationType type,
+			const gfx::Vao &vao,
+			const geo::Frustum &viewfrustum,
+			unsigned int minrange,
+			unsigned int maxrange
+		);
+		//Generate decorations
+		void genDecorations(const worldseed &permutations);
+		void genNewDecorations(
+			float camerax,
+			float cameraz,
+			const worldseed &permutations
+		);
+		unsigned int count();
 	};
 
 	class ChunkTable {
@@ -79,7 +134,7 @@ namespace infworld {
 			const geo::Frustum &viewfrustum
 		);
 		float scale() const;
-		unsigned int range() const;
+		unsigned int range() const;	
 	};
 
 	worldseed makePermutations(int seed, unsigned int count);

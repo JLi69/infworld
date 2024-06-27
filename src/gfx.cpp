@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <stb_image/stb_image.h>
 #include <assert.h>
-#include "app.hpp"
 
 namespace mesh {
 	void addToMesh(Meshf &mesh, const glm::vec3 &v)
@@ -14,26 +13,310 @@ namespace mesh {
 		mesh.vertices.push_back(v.z);
 	}
 
-	void addTriangle(
-		Meshf &mesh,
-		const glm::vec3 &v1,
-		const glm::vec3 &v2,
-		const glm::vec3 &v3
-	) {
-		glm::vec3 normal = glm::normalize(glm::cross(v1 - v3, v2 - v3));
-		addToMesh(mesh, v1);
-		addToMesh(mesh, normal);
-		addToMesh(mesh, v2);
-		addToMesh(mesh, normal);
-		addToMesh(mesh, v3);
-		addToMesh(mesh, normal);
-	}	
+	void addToMesh(Meshf &mesh, const glm::vec2 &v)
+	{
+		mesh.vertices.push_back(v.x);
+		mesh.vertices.push_back(v.y);
+	}
+
+	void Model::dataToBuffers(const std::vector<unsigned int> &buffers) const
+	{
+		//index 0 = vertices
+		//index 1 = texture coordinates
+		//index 2 = normals
+		//index 3 = indices
+		assert(buffers.size() == 4);	
+
+		mesh::Meshf 
+			vertdata = vertData(),
+			tcdata = tcData(),
+			normData = normalData();
+		//vertex positions
+		glBindBuffer(GL_ARRAY_BUFFER, buffers.at(0));	
+		glBufferData(GL_ARRAY_BUFFER, vertdata.size(), vertdata.ptr(), GL_STATIC_DRAW);
+		glVertexAttribPointer(0, 3, GL_FLOAT, false, 3 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(0);
+		//texture coordinates
+		glBindBuffer(GL_ARRAY_BUFFER, buffers.at(1));
+		glBufferData(GL_ARRAY_BUFFER, tcdata.size(), tcdata.ptr(), GL_STATIC_DRAW);	
+		glVertexAttribPointer(1, 2, GL_FLOAT, false, 2 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(1);
+		//normals
+		glBindBuffer(GL_ARRAY_BUFFER, buffers.at(2));	
+		glBufferData(GL_ARRAY_BUFFER, normData.size(), normData.ptr(), GL_STATIC_DRAW);	
+		glVertexAttribPointer(2, 3, GL_FLOAT, false, 3 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(2);
+		//indices
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers.at(3));
+		glBufferData(
+			GL_ELEMENT_ARRAY_BUFFER,
+			indices.size() * sizeof(unsigned int),
+			&indices[0],
+			GL_STATIC_DRAW
+		);
+	}
+
+	Model createConeModel1(unsigned int prec)
+	{
+		Model cone;
+
+		const glm::vec3 top = glm::vec3(0.0f, 1.0f, 0.0f);
+		cone.vertices.push_back(top);
+		cone.normals.push_back(glm::vec3(0.0f, 1.0f, 0.0f));
+		cone.texturecoords.push_back(glm::vec2(0.5f, 1.0f));
+
+		for(int i = 0; i < prec; i++) {
+			//Calculate vertex
+			float angle = 2.0f * M_PI / float(prec) * float(i);
+			glm::vec3 vert = glm::vec3(cosf(angle), 0.0f, sinf(angle));
+			cone.vertices.push_back(vert);
+
+			//Compute texture coordinates
+			float tcx;
+			float fract = float(i % (prec / 2)) / float(prec - 1);
+			if(i < prec / 2)
+				tcx = std::min(fract * 2.0f, 1.0f);
+			else
+				tcx = std::max(1.0f - fract * 2.0f, 0.0f);
+			cone.texturecoords.push_back(glm::vec2(tcx, 0.0f));
+
+			//Compute normals
+			float nextangle = 2.0f * M_PI / float(prec) * float(i + 1);
+			glm::vec3 nextvert = glm::vec3(cosf(nextangle), 0.0f, sinf(nextangle));
+			glm::vec3 norm = glm::normalize(glm::cross(top - vert, nextvert - vert));
+			cone.normals.push_back(norm);
+
+			//Calculate indices
+			unsigned int index1 = i + 1;
+			unsigned int index2 = index1 + 1;
+			if(index2 >= prec + 1)
+				index2 = 1;
+			cone.indices.push_back(index2);
+			cone.indices.push_back(index1);
+			cone.indices.push_back(0);
+		}
+
+		return cone;
+	}
+
+	Model createConeModel2(unsigned int prec)
+	{
+		Model cone;
+
+		const glm::vec3 top = glm::vec3(0.0f, 1.0f, 0.0f);
+		cone.vertices.push_back(top);
+		cone.normals.push_back(glm::vec3(0.0f, 1.0f, 0.0f));
+		cone.texturecoords.push_back(glm::vec2(0.5f, 0.5f));
+
+		for(int i = 0; i < prec; i++) {
+			//Calculate vertex
+			float angle = 2.0f * M_PI / float(prec) * float(i);
+			glm::vec3 vert = glm::vec3(cosf(angle), 0.0f, sinf(angle));
+			cone.vertices.push_back(vert);
+
+			//Compute normals
+			float nextangle = 2.0f * M_PI / float(prec) * float(i + 1);
+			glm::vec3 nextvert = glm::vec3(cosf(nextangle), 0.0f, sinf(nextangle));
+			glm::vec3 norm = glm::normalize(glm::cross(top - vert, nextvert - vert));
+			cone.normals.push_back(norm);
+
+			//Calculate texture coordinates
+			glm::vec2 tc = 
+				glm::vec2(cosf(angle), sinf(angle)) * 0.5f + 
+				glm::vec2(0.5f, 0.5f);
+			cone.texturecoords.push_back(tc);
+
+			//Calculate indices
+			unsigned int index1 = i + 1;
+			unsigned int index2 = index1 + 1;
+			if(index2 >= prec + 1)
+				index2 = 1;
+			cone.indices.push_back(index2);
+			cone.indices.push_back(index1);
+			cone.indices.push_back(0);
+		}
+
+		return cone;
+	}
+
+	Model createFrustumModel(unsigned int prec, float radius1, float radius2)
+	{
+		Model frustum;
+
+		for(int i = 0; i < prec; i++) {
+			float angle = float(i) / float(prec) * 2.0f * M_PI;
+			//Calculate vertex
+			glm::vec3 vert = glm::vec3(cosf(angle), 0.0f, sinf(angle)) * radius1;
+			//Calculate texture coordinates
+			float tcx;
+			float fract = float(i % (prec / 2)) / float(prec - 1);
+			if(i < prec / 2)
+				tcx = std::min(fract * 2.0f, 1.0f);
+			else
+				tcx = std::max(1.0f - fract * 2.0f, 0.0f);
+			//Calculate normals
+			glm::vec3 top = 
+				glm::vec3(cosf(angle), 0.0f, sinf(angle)) * radius2 +
+				glm::vec3(0.0f, 1.0f, 0.0f);
+			float nextangle = float(i + 1) / float(prec) * 2.0f * M_PI;
+			glm::vec3 nextvert = 
+				glm::vec3(cosf(nextangle), 0.0f, sinf(nextangle)) * radius1;
+			glm::vec3 norm = glm::normalize(glm::cross(top - vert, nextvert - vert));
+
+			frustum.vertices.push_back(vert);
+			frustum.texturecoords.push_back(glm::vec2(tcx, 0.0f));
+			frustum.normals.push_back(norm);
+		}
+
+		for(int i = 0; i < prec; i++) {
+			float angle = float(i) / float(prec) * 2.0f * M_PI;
+			//Calculate vertex
+			glm::vec3 vert = 
+				glm::vec3(cosf(angle), 0.0f, sinf(angle)) * radius2 +
+				glm::vec3(0.0f, 1.0f, 0.0f);
+			//Calculate texture coordinates
+			float tcx;
+			float fract = float(i % (prec / 2)) / float(prec - 1);
+			if(i < prec / 2)
+				tcx = std::min(fract * 2.0f, 1.0f);
+			else
+				tcx = std::max(1.0f - fract * 2.0f, 0.0f);
+			//Calculate normals
+			glm::vec3 bot = 
+				glm::vec3(cosf(angle), 0.0f, sinf(angle)) * radius1;
+			float nextangle = float(i + 1) / float(prec) * 2.0f * M_PI;
+			glm::vec3 nextvert = 
+				glm::vec3(cosf(nextangle), 0.0f, sinf(nextangle)) * radius2 +
+				glm::vec3(0.0f, 1.0f, 0.0f);
+			glm::vec3 norm = glm::normalize(glm::cross(vert - bot, nextvert - vert));	
+
+			frustum.vertices.push_back(vert);
+			frustum.texturecoords.push_back(glm::vec2(tcx, 1.0f));
+			frustum.normals.push_back(norm);
+		}
+
+		//Calculate indices
+		for(int i = 0; i < prec; i++) {
+			frustum.indices.push_back(i);
+			frustum.indices.push_back((i + 1) % prec);
+			frustum.indices.push_back(i + prec);
+
+			frustum.indices.push_back(i + prec);
+			frustum.indices.push_back((i + 1) % prec + prec);
+			frustum.indices.push_back((i + 1) % prec);
+		}
+
+		return frustum;
+	}
+
+	Model createPlaneModel(unsigned int subdivision)
+	{
+		Model plane;	
+
+		for(int i = 0; i <= subdivision + 2; i++) {
+			for(int j = 0; j <= subdivision + 2; j++) {
+				float x = float(j) / float(subdivision + 2) * 2.0f - 1.0f;
+				float y = float(i) / float(subdivision + 2) * 2.0f - 1.0f;
+				float tcx = float(j) / float(subdivision + 2);
+				float tcy = float(i) / float(subdivision + 2);
+				plane.vertices.push_back(glm::vec3(x, y, 0.0f));
+				plane.normals.push_back(glm::vec3(0.0f, 0.0f, 1.0f));
+				plane.texturecoords.push_back(glm::vec2(tcx, tcy));
+			}
+		}
+
+		for(int i = 0; i <= subdivision + 1; i++) {
+			for(int j = 0; j <= subdivision + 1; j++) {
+				plane.indices.push_back(i * (subdivision + 3) + j);
+				plane.indices.push_back(i * (subdivision + 3) + j + 1);
+				plane.indices.push_back((i + 1) * (subdivision + 3) + j);
+
+				plane.indices.push_back((i + 1) * (subdivision + 3) + j);
+				plane.indices.push_back((i + 1) * (subdivision + 3) + j + 1);
+				plane.indices.push_back(i * (subdivision + 3) + j + 1);
+			}
+		}
+
+		return plane;
+	}
+
+	void transformModel(Model &model, const glm::mat4 &transform)
+	{
+		for(auto &vert : model.vertices)
+			vert = transform * glm::vec4(vert.x, vert.y, vert.z, 1.0f);
+		const glm::mat4 normalMat = glm::transpose(glm::inverse(transform));
+		for(auto &norm : model.normals) {
+			norm = normalMat * glm::vec4(norm.x, norm.y, norm.z, 1.0f);
+			norm = glm::normalize(norm);
+		}
+	}
+
+	void transformModelTc(Model &model, const glm::mat4 &transform)
+	{
+		for(auto &tc : model.texturecoords)
+			tc = transform * glm::vec4(tc.x, tc.y, 0.0f, 1.0f);
+	}
+
+	Model mergeModels(const Model &model1, const Model &model2)
+	{
+		Model merged;
+
+		//Copy model data into merged model
+		merged.vertices = model1.vertices;
+		merged.normals = model1.normals;
+		merged.texturecoords = model1.texturecoords;
+		merged.indices = model1.indices;
+
+		//Copy model 2's data to the merged model (adjust vertices as needed)
+		for(auto &vert : model2.vertices)
+			merged.vertices.push_back(vert);
+		for(auto &norm : model2.normals)
+			merged.normals.push_back(norm);
+		for(auto &tc : model2.texturecoords)
+			merged.texturecoords.push_back(tc);
+		unsigned int startingindex = model1.vertices.size();
+		for(auto index : model2.indices)
+			merged.indices.push_back(startingindex + index);
+
+		return merged;
+	}
+
+	Meshf Model::vertData() const 
+	{
+		Meshf data;
+		for(auto vert : vertices)
+			addToMesh(data, vert);
+		return data;
+	}
+
+	Meshf Model::normalData() const 
+	{
+		Meshf data;
+		for(auto norm : normals)
+			addToMesh(data, norm);
+		return data;
+	}
+
+	Meshf Model::tcData() const
+	{
+		Meshf data;
+		for(auto tc : texturecoords)
+			addToMesh(data, tc);
+		return data;
+	}
 }
 
 namespace gfx {
 	void Vao::bind() const
 	{	
 		glBindVertexArray(vaoid);
+	}
+
+	void Vao::genBuffers(unsigned int count)
+	{
+		glGenVertexArrays(1, &vaoid);
+		buffers = std::vector<unsigned int>(count);
+		glGenBuffers(buffers.size(), &buffers[0]);
 	}
 
 	Vao createQuadVao()
@@ -134,12 +417,8 @@ namespace gfx {
 			errorcount++;
 		}
 	
-		if(errorcount > 0) {
+		if(errorcount > 0)
 			fprintf(stderr, "%d error(s)\n", errorcount);
-#ifdef DISALLOW_ERRORS 
-			die("OpenGL Error, killing program.");
-#endif
-		}
 	}
 
 	GLenum getFormat(int channels) 

@@ -1,6 +1,6 @@
 #include "infworld.hpp"
-#include "glm/glm.hpp"
-#include "glm/gtc/matrix_transform.hpp"
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 namespace infworld {
 	//Default constructor
@@ -210,12 +210,13 @@ namespace infworld {
 
 			float x = float(p.z) * chunkscale * 2.0f * float(PREC) / float(PREC + 1);
 			float z = float(p.x) * chunkscale * 2.0f * float(PREC) / float(PREC + 1);	
-
+		
 			geo::AABB chunkAABB = geo::AABB(
 				glm::vec3(x, 0.0f, z) * SCALE,
 				glm::vec3(chunkscale * 2.0f, HEIGHT * 2.0f, chunkscale * 2.0f) * SCALE
 			);
-
+			
+			//Frustum culling
 			if(!geo::intersectsFrustum(viewfrustum, chunkAABB))
 				continue;
 

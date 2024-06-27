@@ -23,8 +23,8 @@ uniform float maxrange;
 vec2 getuv1()
 {
 	return
-		vec2(0.0, 0.0) * float(height < 0.02) +
-		vec2(0.25, 0.0) * float(height >= 0.02 && height < 0.1) +
+		vec2(0.0, 0.0) * float(height < 0.01) +
+		vec2(0.25, 0.0) * float(height >= 0.01 && height < 0.1) +
 		vec2(0.50, 0.0) * float(height >= 0.1 && height < 0.6) +
 		vec2(0.75, 0.0) * float(height >= 0.6);
 }
@@ -32,8 +32,8 @@ vec2 getuv1()
 vec2 getuv2()
 {
 	return
-		vec2(0.0, 0.0) * float(height < 0.04) +
-		vec2(0.25, 0.0) * float(height >= 0.04 && height < 0.3) +
+		vec2(0.0, 0.0) * float(height < 0.02) +
+		vec2(0.25, 0.0) * float(height >= 0.02 && height < 0.3) +
 		vec2(0.50, 0.0) * float(height >= 0.3 && height < 0.7) +
 		vec2(0.75, 0.0) * float(height >= 0.7);
 }
@@ -46,7 +46,7 @@ float mixval(float lower, float upper, float y)
 float heightToMix()
 {
 	return
-		mixval(0.02, 0.04, height) +
+		mixval(0.01, 0.02, height) +
 		mixval(0.1, 0.3, height) +
 		mixval(0.6, 0.7, height);
 }
