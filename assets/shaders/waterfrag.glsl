@@ -17,8 +17,8 @@ uniform vec3 camerapos;
 
 uniform float viewdist;
 
-const float FOG_DIST = 128.0;
-const float WATER_FOG_DIST = 24.0;
+const float FOG_DIST = 10000.0;
+const float WATER_FOG_DIST = 128.0;
 
 const float angle1 = -0.5;
 const float angle2 = 3.14 / 2.0 - 0.25;

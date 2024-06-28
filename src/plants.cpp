@@ -80,7 +80,7 @@ mesh::Model createBranchEnd(
 
 	transformtc = glm::translate(glm::mat4(1.0f), glm::vec3(0.51f, 0.0f, 0.0f));
 	transformtc = glm::scale(transformtc, glm::vec3(0.48f, 1.0f, 1.0f));
-	int leafcount = std::max<int>((detail - 2) / 3 + 1, 1);
+	int leafcount = std::max<int>((2 * detail) / 3 - 1, 1);
 	int leafdetail = std::max<int>(detail / 2 - 2, 0);
 	for(int i = 0; i < leafcount; i++) {
 		mesh::Model leaves = mesh::createPlaneModel(leafdetail);

@@ -14,8 +14,8 @@ uniform sampler2D terraintexture;
 
 uniform float viewdist;
 
-const float FOG_DIST = 128.0;
-const float WATER_FOG_DIST = 24.0;
+const float FOG_DIST = 10000.0;
+const float WATER_FOG_DIST = 128.0;
 
 uniform vec2 center;
 uniform float maxrange;

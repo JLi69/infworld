@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
 		pinetree = plants::createPineTreeModel(8),
 		pinetreelowdetail = plants::createPineTreeModel(4);
 	gfx::Vao 
-		tree = plants::createTreeModel(8),
+		tree = plants::createTreeModel(6),
 		treelowdetail = plants::createTreeModel(3);
 	//Textures
 	unsigned int terraintextures;
@@ -104,11 +104,13 @@ int main(int argc, char *argv[])
 	ShaderProgram simpleWaterShader("assets/shaders/instancedvert.glsl", "assets/shaders/watersimplefrag.glsl");
 	ShaderProgram skyboxShader("assets/shaders/skyboxvert.glsl", "assets/shaders/skyboxfrag.glsl");
 	ShaderProgram treeShader("assets/shaders/tree-vert.glsl", "assets/shaders/textured-frag.glsl");
-	float viewdist = CHUNK_SZ * SCALE * 2.0f * float(argvals.range) * 0.8f * std::pow(LOD_SCALE, MAX_LOD - 1);
+	float viewdist = CHUNK_SZ * SCALE * 2.0f * float(argvals.range) * std::pow(LOD_SCALE, MAX_LOD - 2);
 	waterShader.use();
 	waterShader.uniformFloat("viewdist", viewdist);
 	simpleWaterShader.use();
 	simpleWaterShader.uniformFloat("viewdist", viewdist);
+	treeShader.use();
+	treeShader.uniformFloat("viewdist", viewdist);
 	terrainShader.use();
 	terrainShader.uniformFloat("viewdist", viewdist);
 	terrainShader.uniformFloat("maxheight", HEIGHT); 
@@ -117,7 +119,7 @@ int main(int argc, char *argv[])
 	decorations.generateOffsets(infworld::PINE_TREE, pinetree, 0, 5);
 	decorations.generateOffsets(infworld::PINE_TREE, pinetreelowdetail, 5, 999);
 	decorations.generateOffsets(infworld::TREE, tree, 0, 5);
-	decorations.generateOffsets(infworld::TREE, treelowdetail, 5, 20);
+	decorations.generateOffsets(infworld::TREE, treelowdetail, 5, 16);
 
 	glClearColor(0.5f, 0.8f, 1.0f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
@@ -206,6 +208,7 @@ int main(int argc, char *argv[])
 			"transform",
 			glm::scale(glm::mat4(1.0f), glm::vec3(SCALE * 2.5f))
 		);
+		treeShader.uniformVec3("camerapos", cam.position);
 		//Draw pine trees
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, pinetexture);
@@ -268,7 +271,7 @@ int main(int argc, char *argv[])
 			decorations.generateOffsets(infworld::PINE_TREE, pinetree, 0, 5);
 			decorations.generateOffsets(infworld::PINE_TREE, pinetreelowdetail, 5, 999);
 			decorations.generateOffsets(infworld::TREE, tree, 0, 5);
-			decorations.generateOffsets(infworld::TREE, treelowdetail, 5, 20);
+			decorations.generateOffsets(infworld::TREE, treelowdetail, 5, 16);
 		}
 
 		glfwSwapBuffers(window);
