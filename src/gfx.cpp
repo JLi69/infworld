@@ -25,7 +25,7 @@ namespace mesh {
 		//index 1 = texture coordinates
 		//index 2 = normals
 		//index 3 = indices
-		assert(buffers.size() == 4);	
+		assert(buffers.size() >= 4);	
 
 		mesh::Meshf 
 			vertdata = vertData(),

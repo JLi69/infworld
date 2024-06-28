@@ -196,7 +196,8 @@ namespace plants {
 	gfx::Vao createPineTreeModel(unsigned int detail)
 	{
 		gfx::Vao pinetree;
-		pinetree.genBuffers(4);
+		//Index 4 is the instance offset array
+		pinetree.genBuffers(5);
 		pinetree.bind();
 
 		glm::mat4 transform;
@@ -245,6 +246,10 @@ namespace plants {
 
 		pinetree.vertcount = treemodel.indices.size();	
 		treemodel.dataToBuffers(pinetree.buffers);
+		glBindBuffer(GL_ARRAY_BUFFER, pinetree.buffers.at(4));
+		glVertexAttribPointer(3, 3, GL_FLOAT, false, 3 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(3);
+		glVertexAttribDivisor(3, 1);
 
 		return pinetree;
 	}
@@ -252,7 +257,8 @@ namespace plants {
 	gfx::Vao createTreeModel(unsigned int detail)
 	{
 		gfx::Vao tree;
-		tree.genBuffers(4);
+		//Index 4 is the instance offset array
+		tree.genBuffers(5);
 		tree.bind();
 
 		const float ANGLE = glm::radians(30.0f);
@@ -287,6 +293,10 @@ namespace plants {
 
 		tree.vertcount = treemodel.indices.size();
 		treemodel.dataToBuffers(tree.buffers);
+		glBindBuffer(GL_ARRAY_BUFFER, tree.buffers.at(4));
+		glVertexAttribPointer(3, 3, GL_FLOAT, false, 3 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(3);
+		glVertexAttribDivisor(3, 1);
 
 		return tree;
 	}

@@ -8,6 +8,7 @@
 layout(location = 0) in vec4 pos;
 layout(location = 1) in vec2 texcoord;
 layout(location = 2) in vec3 norm;
+layout(location = 3) in vec3 offset;
 
 uniform float time;
 
@@ -27,6 +28,7 @@ out vec2 tc;
 void main()
 {
 	vec4 transformed = transform * pos;
+	transformed += vec4(offset, 0.0);
 	if(texcoord.x > 0.5) {
 		float dist = length(pos.xz);
 		float value = sin(pos.x) * 132.0 + cos(pos.z) * 931.0;

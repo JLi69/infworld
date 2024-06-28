@@ -3,6 +3,7 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include <random>
+#include <unordered_map>
 #include "noise.hpp"
 #include "gfx.hpp"
 #include "geometry.hpp"
@@ -55,38 +56,35 @@ namespace infworld {
 		//as trees (in this case we only have two types of trees)
 		std::vector<std::vector<Decoration>> decorations;
 		std::vector<ChunkPos> positions;
+		std::unordered_map<unsigned int, unsigned int> vaoCount;
 
-		void genPineTrees(
+		void genDecorations(
 			const worldseed &permutations,
+			DecorationType type,
+			unsigned int n,
 			int x,
 			int z,
 			unsigned int index,
 			std::minstd_rand0 &lcg
-		);
-		void genTrees(
-			const worldseed &permutations,
-			int x,
-			int z,
-			unsigned int index,
-			std::minstd_rand0 &lcg
-		);
+		);	
+		void generate(const worldseed &permutations, unsigned int index);
 	public:
 		DecorationTable(unsigned int sz, float scale);
 		//Draw chunk decorations
-		void drawDecorations(
-			ShaderProgram &shader,
-			DecorationType type,
-			const gfx::Vao &vao,
-			const geo::Frustum &viewfrustum,
-			unsigned int minrange,
-			unsigned int maxrange
-		);
+		void drawDecorations(const gfx::Vao &vao);
 		//Generate decorations
 		void genDecorations(const worldseed &permutations);
-		void genNewDecorations(
+		//Returns true if new decorations needed to be generated
+		bool genNewDecorations(
 			float camerax,
 			float cameraz,
 			const worldseed &permutations
+		);
+		void generateOffsets(
+			DecorationType type,
+			const gfx::Vao &vao,
+			unsigned int minrange,
+			unsigned int maxrange
 		);
 		unsigned int count();
 	};

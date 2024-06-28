@@ -1,6 +1,7 @@
 #include "infworld.hpp"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <algorithm>
 
 namespace infworld {
 	int getChunkSeed(int x, int z, const worldseed &permutations)
@@ -26,7 +27,8 @@ namespace infworld {
 		chunkscale = scale;
 		for(int x = -int(sz); x <= int(sz); x++)
 			for(int z = -int(sz); z <= int(sz); z++)
-				positions.push_back({ x, z });
+				positions.push_back({ x, z });	
+		decorations = std::vector<std::vector<Decoration>>(count());
 	}
 
 	unsigned int DecorationTable::count()
@@ -35,134 +37,90 @@ namespace infworld {
 	}
 
 	//Draw chunk decorations
-	void DecorationTable::drawDecorations(
-		ShaderProgram &shader,
-		DecorationType type,
-		const gfx::Vao &vao,
-		const geo::Frustum &viewfrustum,
-		unsigned int minrange,
-		unsigned int maxrange
-	) {
-		if(decorations.size() == 0)
+	void DecorationTable::drawDecorations(const gfx::Vao &vao) {
+		if(!vaoCount.count(vao.vaoid))
 			return;
+		glDrawElementsInstanced(GL_TRIANGLES, vao.vertcount, GL_UNSIGNED_INT, 0, vaoCount.at(vao.vaoid));
+	}
 
-		for(int i = 0; i < count(); i++) {
-			ChunkPos pos = positions.at(i);
-			float chunksz = chunkscale * 2.0f * float(PREC) / float(PREC + 1);
-			float x = float(pos.z) * chunksz;
-			float z = float(pos.x) * chunksz;
+	void DecorationTable::genDecorations(
+		const worldseed &permutations,
+		DecorationType type,
+		unsigned int n,
+		int x,
+		int z,
+		unsigned int index,
+		std::minstd_rand0 &lcg
+	) {
+		float chunksz = chunkscale * 2.0f * float(PREC) / float(PREC + 1);	
+		float posx = float(z) * chunksz;
+		float posz = float(x) * chunksz;
+		unsigned int amount = (unsigned int)(lcg()) % n;
 
-			if((labs(pos.x - centerx) < minrange &&
-			    labs(pos.z - centerz) < minrange) ||
-			   (labs(pos.x - centerx) >= maxrange ||
-				labs(pos.z - centerz) >= maxrange))
-				continue;
+		for(int i = 0; i < amount; i++) {
+			float x = float((unsigned int)(lcg()) % PREC) / float(PREC) - 0.5f;
+			float z = float((unsigned int)(lcg()) % PREC) / float(PREC) - 0.5f;
+			x *= chunksz;
+			z *= chunksz;	
+			x += posx;
+			z += posz;
+			float y = getHeight(z, x, permutations);	
+			y *= HEIGHT;
+			x *= float(PREC) / float(PREC + 1);
+			z *= float(PREC) / float(PREC + 1);
+			decorations.at(index).push_back({
+				glm::vec3(x, y - 0.5f, z),
+				type,
+			});
+		}
+	}
 
-			//Frustum culling
-			geo::AABB boundingbox = geo::AABB(
-				glm::vec3(x, 0.0f, z) * SCALE,
-				glm::vec3(chunkscale, HEIGHT, chunkscale) * SCALE * 2.2f
-			);
+	void DecorationTable::generate(const worldseed &permutations, unsigned int index)
+	{
+		ChunkPos pos = positions.at(index);
+		int seed = getChunkSeed(pos.x, pos.z, permutations);
+		std::minstd_rand0 lcg;
+		lcg.seed(seed);
+		genDecorations(permutations, PINE_TREE, 72, pos.x, pos.z, index, lcg);
+		genDecorations(permutations, TREE, 24, pos.x, pos.z, index, lcg);
 
-			if(!geo::intersectsFrustum(viewfrustum, boundingbox))
-				continue;
-
-			for(const auto &decoration : decorations.at(i)) {
-				if(decoration.type != type)
-					continue;
-				glm::mat4 transform(1.0f);
-				transform = glm::translate(transform, decoration.position * SCALE);
-				transform = glm::scale(transform, glm::vec3(SCALE * 2.5f));
-				shader.uniformMat4x4("transform", transform);
-				glDrawElements(GL_TRIANGLES, vao.vertcount, GL_UNSIGNED_INT, 0);
+		decorations.at(index).erase(std::remove_if(
+			decorations.at(index).begin(),
+			decorations.at(index).end(),
+			[&permutations](Decoration d) {
+				float x = d.position.x / 128.0f;
+				float z = d.position.z / 128.0f;
+				return perlin::noise(x, z, permutations.at(0)) < 0.0f;
 			}
-		}
-	}	
+		), decorations.at(index).end());
 
-	void DecorationTable::genPineTrees(
-		const worldseed &permutations,
-		int x,
-		int z,
-		unsigned int index,
-		std::minstd_rand0 &lcg
-	) {
-		float chunksz = chunkscale * 2.0f * float(PREC) / float(PREC + 1);	
-		float posx = float(z) * chunksz;
-		float posz = float(x) * chunksz;
-		unsigned int pinetreecount = (unsigned int)(lcg()) % 72;
+		decorations.at(index).erase(std::remove_if(
+			decorations.at(index).begin(),
+			decorations.at(index).end(),
+			[](Decoration d) {
+				float y = d.position.y / HEIGHT;
+				return d.type == TREE && (y < 0.02f || y > 0.2f);
+			}
+		), decorations.at(index).end());
 
-		for(int i = 0; i < pinetreecount; i++) {
-			float treex = float((unsigned int)(lcg()) % PREC) / float(PREC) - 0.5f;
-			float treez = float((unsigned int)(lcg()) % PREC) / float(PREC) - 0.5f;
-			treex *= chunksz;
-			treez *= chunksz;	
-			treex += posx;
-			treez += posz;
-			float treey = getHeight(treez, treex, permutations);
-			if(perlin::noise(treex / 128.0f, treez / 128.0f, permutations.at(0)) < 0.0f)
-				continue;
-			if(treey < 0.04f || treey > 0.3f)
-				continue;
-			treey *= HEIGHT;
-			treex *= float(PREC) / float(PREC + 1);
-			treez *= float(PREC) / float(PREC + 1);
-			decorations.at(index).push_back({
-				glm::vec3(treex, treey - 0.5f, treez),
-				PINE_TREE,
-			});
-		}
+		decorations.at(index).erase(std::remove_if(
+			decorations.at(index).begin(),
+			decorations.at(index).end(),
+			[](Decoration d) {
+				float y = d.position.y / HEIGHT;
+				return d.type == PINE_TREE && (y < 0.04f || y > 0.3f);
+			}
+		), decorations.at(index).end());
 	}
 
-	void DecorationTable::genTrees(
-		const worldseed &permutations,
-		int x,
-		int z,
-		unsigned int index,
-		std::minstd_rand0 &lcg
-	) {
-		float chunksz = chunkscale * 2.0f * float(PREC) / float(PREC + 1);	
-		float posx = float(z) * chunksz;
-		float posz = float(x) * chunksz;
-		unsigned int treecount = (unsigned int)(lcg()) % 24;
-
-		for(int i = 0; i < treecount; i++) {
-			float treex = float((unsigned int)(lcg()) % PREC) / float(PREC) - 0.5f;
-			float treez = float((unsigned int)(lcg()) % PREC) / float(PREC) - 0.5f;
-			treex *= chunksz;
-			treez *= chunksz;
-			treex += posx;
-			treez += posz;
-			float treey = getHeight(treez, treex, permutations);
-			if(perlin::noise(treex / 128.0f, treez / 128.0f, permutations.at(0)) < 0.0f)
-				continue;
-			if(treey < 0.02f || treey > 0.2f)
-				continue;
-			treey *= HEIGHT;
-			treex *= float(PREC) / float(PREC + 1);
-			treez *= float(PREC) / float(PREC + 1);
-			decorations.at(index).push_back({
-				glm::vec3(treex, treey - 0.5f, treez),
-				TREE,
-			});
-		}
-	}
-	
 	//Generate decorations
 	void DecorationTable::genDecorations(const worldseed &permutations)
 	{
-		decorations = std::vector<std::vector<Decoration>>(count());
-
-		for(int i = 0; i < decorations.size(); i++) {
-			ChunkPos pos = positions.at(i);
-			int seed = getChunkSeed(pos.x, pos.z, permutations);
-			std::minstd_rand0 lcg;
-			lcg.seed(seed);
-			genPineTrees(permutations, pos.x, pos.z, i, lcg);
-			genTrees(permutations, pos.x, pos.z, i, lcg);
-		}
+		for(int i = 0; i < decorations.size(); i++)
+			generate(permutations, i);
 	}
 
-	void DecorationTable::genNewDecorations(
+	bool DecorationTable::genNewDecorations(
 		float camerax,
 		float cameraz,
 		const worldseed &permutations
@@ -172,7 +130,7 @@ namespace infworld {
 			ix = int(floorf((cameraz + chunksz * SCALE) / (chunksz * SCALE * 2.0f))),
 			iz = int(floorf((camerax + chunksz * SCALE) / (chunksz * SCALE * 2.0f)));
 		if(ix == centerx && iz == centerz)
-			return;
+			return false;
 
 		int range = (size - 1) / 2;
 		std::vector<ChunkPos> newChunks;
@@ -197,14 +155,51 @@ namespace infworld {
 			ChunkPos pos = newChunks.at(i);
 			positions.at(index) = pos;
 			decorations.at(index).clear();
-			int seed = getChunkSeed(pos.x, pos.z, permutations);
-			std::minstd_rand0 lcg;
-			lcg.seed(seed);
-			genPineTrees(permutations, pos.x, pos.z, index, lcg);
-			genTrees(permutations, pos.x, pos.z, index, lcg);
+			generate(permutations, index);
 		}
 
 		centerx = ix;
 		centerz = iz;
+
+		return true;
+	}
+
+	void DecorationTable::generateOffsets(
+		DecorationType type,
+		const gfx::Vao &vao,
+		unsigned int minrange,
+		unsigned int maxrange
+	) {
+		if(decorations.size() == 0)
+			return;
+
+		std::vector<float> offsets;
+
+		for(int i = 0; i < count(); i++) {
+			ChunkPos pos = positions.at(i);
+
+			if((labs(pos.x - centerx) < minrange &&
+			    labs(pos.z - centerz) < minrange) ||
+			   (labs(pos.x - centerx) >= maxrange ||
+				labs(pos.z - centerz) >= maxrange))
+				continue;
+
+			for(const auto &decoration : decorations.at(i)) {
+				if(decoration.type != type)
+					continue;
+				offsets.push_back(decoration.position.x * SCALE);
+				offsets.push_back(decoration.position.y * SCALE);
+				offsets.push_back(decoration.position.z * SCALE);
+			}
+		}
+
+		if(vaoCount.count(vao.vaoid))
+			vaoCount.at(vao.vaoid) = offsets.size() / 3;
+		else
+			vaoCount.insert({ vao.vaoid, offsets.size() / 3 });
+
+		glBindBuffer(GL_ARRAY_BUFFER, vao.buffers.at(4));
+		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * offsets.size(), &offsets[0], GL_STATIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	}
 }

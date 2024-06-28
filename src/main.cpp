@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
 
 	infworld::ChunkTable chunktables[MAX_LOD];	
 	generateChunks(permutations, chunktables, argvals.range);
-	infworld::DecorationTable decorations = infworld::DecorationTable(48, CHUNK_SZ);
+	infworld::DecorationTable decorations = infworld::DecorationTable(40, CHUNK_SZ);
 	decorations.genDecorations(permutations);
 	//Quad
 	gfx::Vao quad = gfx::createQuadVao();
@@ -74,11 +74,11 @@ int main(int argc, char *argv[])
 		pinetreelowdetail = plants::createPineTreeModel(4);
 	gfx::Vao 
 		tree = plants::createTreeModel(8),
-		treelowdetail = plants::createTreeModel(4);
+		treelowdetail = plants::createTreeModel(3);
 	//Textures
 	unsigned int terraintextures;
-	glGenTextures(1, &terraintextures);
-	gfx::loadTexture("assets/textures/terraintextures.png", terraintextures);
+	glGenTextures(1, &terraintextures); 
+	gfx::loadTexture("assets/textures/terraintextures.png", terraintextures); 
 	unsigned int watermaps;
 	glGenTextures(1, &watermaps);
 	gfx::loadTexture("assets/textures/watermaps.png", watermaps);
@@ -113,6 +113,11 @@ int main(int argc, char *argv[])
 	terrainShader.uniformFloat("viewdist", viewdist);
 	terrainShader.uniformFloat("maxheight", HEIGHT); 
 	terrainShader.uniformInt("prec", PREC);
+	
+	decorations.generateOffsets(infworld::PINE_TREE, pinetree, 0, 5);
+	decorations.generateOffsets(infworld::PINE_TREE, pinetreelowdetail, 5, 999);
+	decorations.generateOffsets(infworld::TREE, tree, 0, 5);
+	decorations.generateOffsets(infworld::TREE, treelowdetail, 5, 20);
 
 	glClearColor(0.5f, 0.8f, 1.0f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
@@ -197,48 +202,24 @@ int main(int argc, char *argv[])
 		treeShader.uniformVec3("camerapos", cam.position);
 		treeShader.uniformFloat("time", time);
 		treeShader.uniformFloat("windstrength", SCALE * 3.0f);
+		treeShader.uniformMat4x4(
+			"transform",
+			glm::scale(glm::mat4(1.0f), glm::vec3(SCALE * 2.5f))
+		);
 		//Draw pine trees
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, pinetexture);
 		pinetree.bind();
-		decorations.drawDecorations(
-			treeShader,
-			infworld::PINE_TREE,
-			pinetree,
-			viewfrustum,
-			0,
-			5
-		);
+		decorations.drawDecorations(pinetree);
 		pinetreelowdetail.bind();
-		decorations.drawDecorations(
-			treeShader,
-			infworld::PINE_TREE,
-			pinetreelowdetail,
-			viewfrustum,
-			5,
-			999
-		);
+		decorations.drawDecorations(pinetreelowdetail);
 		//Draw trees
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, treetexture);
 		tree.bind();
-		decorations.drawDecorations(
-			treeShader,
-			infworld::TREE,
-			tree,
-			viewfrustum,
-			0,
-			5
-		);
+		decorations.drawDecorations(tree);
 		treelowdetail.bind();
-		decorations.drawDecorations(
-			treeShader,
-			infworld::TREE,
-			treelowdetail,
-			viewfrustum,
-			5,
-			32
-		);
+		decorations.drawDecorations(treelowdetail);
 
 		quad.bind();
 		const int waterrange = 4;
@@ -282,7 +263,13 @@ int main(int argc, char *argv[])
 		cam.fly(dt, FLY_SPEED);
 		for(int i = 0; i < MAX_LOD; i++)
 			chunktables[i].generateNewChunks(cam.position.x, cam.position.z, permutations);
-		decorations.genNewDecorations(cam.position.x, cam.position.z, permutations);
+		bool generated = decorations.genNewDecorations(cam.position.x, cam.position.z, permutations);
+		if(generated) {
+			decorations.generateOffsets(infworld::PINE_TREE, pinetree, 0, 5);
+			decorations.generateOffsets(infworld::PINE_TREE, pinetreelowdetail, 5, 999);
+			decorations.generateOffsets(infworld::TREE, tree, 0, 5);
+			decorations.generateOffsets(infworld::TREE, treelowdetail, 5, 20);
+		}
 
 		glfwSwapBuffers(window);
 		gfx::outputErrors();
