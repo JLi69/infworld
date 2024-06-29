@@ -14,8 +14,7 @@ to generate a unique world. By default, the seed is randomly chosen.
 
 The range is an integer between 3 and 64 that will be the applications
 "render distance" in terms of how many chunks the application will attempt
-to render. The default it is 10 though you can set it to a higher number if you
-desire, be warned that setting it to a higher value will lead to lower
+to render. The default it is 10 though you can set it to a higher number if you desire, be warned that setting it to a higher value will lead to lower
 performance.
 
 ## compile
@@ -57,6 +56,29 @@ mingw32-make -j$(nproc)
 
 [waterdudv.png](https://www.dropbox.com/sh/lwvm5i223cwd5ue/AADedi_y3XTQ_j2aD2oH4DLKa?dl=0)
 (linked from this [wonderful video by ThinMatrix](https://www.youtube.com/watch?v=7T5o4vZXAvI))
+
+[tree_bark.png](https://opengameart.org/content/tree-bark-texture) - 
+copyright Blender Foundation | apricot.blender.org 
+License: [CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/)
+Used as bark texture for tree textures
+
+[shrub2.png](https://opengameart.org/content/3-tiling-shrub-textures) - by "bart"  
+used as texture for "pinetreetexture.png"
+License: [CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/)
+
+also used the shape of pine_leaves.png from quaternius to create the shape of
+the pine tree branches
+[pine_leaves.png](https://opengameart.org/content/lowpoly-textured-trees-pineleavespng)
+
+used leaves texture from [https://opengameart.org/node/10501](https://opengameart.org/node/10501)
+by lauris71
+licensed under [CC-BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) 
+or GPL 3.0 
+used part of the leaves texture for leaves in "treetexture.png"
+also modified to be more "green"
+
+Consider all textures used to be distributed under the 
+[CC-BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) license
 
 ### skybox
 downloaded from [https://opengameart.org/content/sky-box-sunny-day](https://opengameart.org/content/sky-box-sunny-day)
