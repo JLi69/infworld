@@ -1,9 +1,9 @@
+#define _USE_MATH_DEFINES
+#include <math.h>
 #include "plants.hpp"
 #include "gfx.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 #include <stack>
-#define _USE_MATH_DEFINES
-#include <math.h>
 
 struct BranchProperties {
 	glm::mat4 transform = glm::mat4(1.0f); //rotation and scale
