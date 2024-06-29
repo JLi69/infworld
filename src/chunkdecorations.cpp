@@ -125,7 +125,10 @@ namespace infworld {
 		float cameraz,
 		const worldseed &permutations
 	) {
-		float chunksz = chunkscale * float(PREC) / float(PREC + 1);
+		float chunksz = 
+			chunkscale * 
+			float(PREC) / float(PREC + 1) *
+			float(PREC) / float(PREC + 1);
 		int
 			ix = int(floorf((cameraz + chunksz * SCALE) / (chunksz * SCALE * 2.0f))),
 			iz = int(floorf((camerax + chunksz * SCALE) / (chunksz * SCALE * 2.0f)));

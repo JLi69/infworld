@@ -37,7 +37,7 @@ void main()
 		transformed.z += sin(time * dist + value / 2.0) * 0.04 * dist * windstrength;
 	}
 	gl_Position = persp * view * transformed;
-	fragpos = (transform * pos).xyz;
+	fragpos = transformed.xyz;
 	lighting = max(-dot(lightdir, norm), 0.0) * 0.7 + 0.3;
 	tc = texcoord;
 }

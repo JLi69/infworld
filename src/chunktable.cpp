@@ -135,9 +135,10 @@ namespace infworld {
 			return;
 		}
 
+		float chunksz = chunkscale * float(PREC) / float(PREC + 1);
 		int
-			ix = int(floorf((cameraz + chunkscale * SCALE) / (chunkscale * SCALE * 2.0f))),
-			iz = int(floorf((camerax + chunkscale * SCALE) / (chunkscale * SCALE * 2.0f)));
+			ix = int(floorf((cameraz + chunksz * SCALE) / (chunksz * SCALE * 2.0f))),
+			iz = int(floorf((camerax + chunksz * SCALE) / (chunksz * SCALE * 2.0f)));
 		if(ix == centerx && iz == centerz)
 			return;
 

@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
 
 	infworld::ChunkTable chunktables[MAX_LOD];	
 	generateChunks(permutations, chunktables, argvals.range);
-	infworld::DecorationTable decorations = infworld::DecorationTable(40, CHUNK_SZ);
+	infworld::DecorationTable decorations = infworld::DecorationTable(36, CHUNK_SZ);
 	decorations.genDecorations(permutations);
 	//Quad
 	gfx::Vao quad = gfx::createQuadVao();
