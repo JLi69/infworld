@@ -31,7 +31,7 @@ namespace infworld {
 	void ChunkTable::clearBuffers()
 	{
 		glDeleteVertexArrays(vaoids.size(), &vaoids[0]);
-		glGenBuffers(bufferids.size(), &bufferids[0]);
+		glDeleteBuffers(bufferids.size(), &bufferids[0]);
 	}
 
 	void ChunkTable::addChunk(
